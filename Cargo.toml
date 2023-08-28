@@ -6,5 +6,7 @@ edition = "2021"
 [dependencies]
 bitwarden = { version = "0.3.0", features = ["secrets"] }
 clap = { version = "4.4.0", features = ["derive", "cargo", "env"] }
+serde = "1.0.188"
 tokio = { version = "1.32.0", features = ["full"] }
+toml = "0.7.6"
 uuid = "1.4.1"
