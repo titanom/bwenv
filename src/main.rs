@@ -1,3 +1,9 @@
+use bitwarden::{
+    auth::request::AccessTokenLoginRequest,
+    client::client_settings::{ClientSettings, DeviceType},
+    secrets_manager::secrets::SecretIdentifiersRequest,
+    Client,
+};
 use clap::Parser;
 
 #[derive(Parser, Debug)]
@@ -11,13 +17,23 @@ struct Args {
     )]
     token: String,
 
-    #[arg(short, long, long_help = "Secret manager project name", required = true)]
+    #[arg(
+        short,
+        long,
+        long_help = "Secret manager project name",
+        required = true
+    )]
     project: String,
 
     #[arg(short, long, long_help = "Environment of the project", required = true)]
     environment: String,
 
-    #[arg(short, long, long_help = "Cache directory for the secrets", required = true)]
+    #[arg(
+        short,
+        long,
+        long_help = "Cache directory for the secrets",
+        required = true
+    )]
     cache_dir: String,
 
     #[arg(
@@ -29,8 +45,29 @@ struct Args {
     revalidate: u64,
 }
 
-fn main() {
+#[tokio::main(flavor = "current_thread")]
+async fn main() {
     let args = Args::parse();
 
-    println!("{:?}", args)
+    let mut bw_client = Client::new(Some(ClientSettings {
+        identity_url: "https://identity.bitwarden.com".to_string(),
+        api_url: "https://api.bitwarden.com".to_string(),
+        user_agent: "Bitwarden Rust-SDK".to_string(),
+        device_type: DeviceType::SDK,
+    }));
+
+    bw_client
+        .access_token_login(&AccessTokenLoginRequest {
+            access_token: args.token,
+        })
+        .await
+        .unwrap();
+
+    let bw_organization = SecretIdentifiersRequest {
+        organization_id: bw_client.get_access_token_organization().unwrap(),
+    };
+    println!(
+        "Stored secrets: {:#?}",
+        bw_client.secrets().list(&bw_organization).await.unwrap()
+    );
 }
