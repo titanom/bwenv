@@ -5,4 +5,4 @@ edition = "2021"
 
 [dependencies]
 bitwarden = { version = "0.3.0", features = ["secrets"] }
-clap = { version = "4.4.0", features = ["derive"] }
+clap = { version = "4.4.0", features = ["derive", "cargo", "env"] }
