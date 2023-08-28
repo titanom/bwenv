@@ -1,0 +1,13 @@
+environment = "$NODE_ENV"
+cache_dir = "./node_modules/.cache/"
+revalidate = 3600
+
+[environments]
+[environments.development]
+alias = ["dev"]
+project = "p1"
+
+[environments.production]
+alias = ["prod"]
+project = "p2"
+cache_dir = "./node_modules/.cache/prod"
