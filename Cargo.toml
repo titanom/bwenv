@@ -1,0 +1,8 @@
+[package]
+name = "bwenv-rs"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bitwarden = { version = "0.3.0", features = ["secrets"] }
+clap = { version = "4.4.0", features = ["derive"] }
