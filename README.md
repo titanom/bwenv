@@ -20,4 +20,25 @@ git-fetch-with-cli = true
 
 ## Configuration
 
+```toml
+# list of environment variables to specify the environment being used
+# first match applies
+environment = ["MY_ENV", "NODE_ENV"]
 
+[cache]
+# directory to store the local cache
+directory = "./node_modules/.cache"
+
+# mage age in seconds of the local cache
+max_age = 3600
+
+# max seconds of stale cached values
+stale_while_revalidate = 3600
+
+[environments]
+# specify named environments
+[environments.development]
+project = "bws_project_id"
+alias = ["dev"]
+cache_dir = "./node_modules/.dev-cache"
+```
