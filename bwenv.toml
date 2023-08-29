@@ -1,6 +1,9 @@
-environment = "$NODE_ENV"
-cache_dir = "./node_modules/.cache/"
-revalidate = 3600
+environment = ["MY_ENV", "NODE_ENV"]
+
+[cache]
+directory = "./node_modules/.cache/"
+max_age = 3600
+stale_while_revalidate = 3600
 
 [environments]
 [environments.development]
