@@ -37,10 +37,10 @@ struct Cache {
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
-    environment: Option<Vec<String>>,
+    pub environment: Option<Vec<String>>,
     cache: Option<Cache>,
     preset: Option<Preset>,
-    project: Option<String>,
+    pub project: Option<String>,
     #[serde(flatten)]
     profiles: BTreeMap<String, Profile>,
 }
@@ -71,6 +71,15 @@ pub fn parse_config_file(file_path: &PathBuf) -> Result<Config, Error> {
     file.read_to_string(&mut toml_str).unwrap();
 
     let config: Config = toml::from_str(&toml_str).unwrap();
-    println!("config: {:?}", config);
+
     Ok(config)
+}
+
+pub fn find_local_config() -> Option<PathBuf> {
+    find_up("bwenv.toml", None)
+}
+
+pub fn parse_local_config() -> Result<Config, Error> {
+    let config_file_path = find_local_config().unwrap();
+    parse_config_file(&config_file_path)
 }

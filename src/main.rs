@@ -1,3 +1,5 @@
+use std::env;
+
 use bitwarden::{
     auth::request::AccessTokenLoginRequest,
     client::client_settings::{ClientSettings, DeviceType},
@@ -9,22 +11,41 @@ use clap::Parser;
 mod cli;
 mod config;
 
-use crate::cli::Args;
-use crate::config::{find_up, parse_config_file};
+use crate::{cli::Args, config::parse_local_config};
 
 fn main() {
-    let config_file_path = find_up("bwenv.toml", None).unwrap();
+    let local_config = parse_local_config().unwrap();
 
-    let _ = parse_config_file(&config_file_path);
+    let _ = evaluate_config(&local_config);
+
+    println!("local_config: {:?}", local_config);
+}
+
+fn get_profile_from_env(env_var_names: &Vec<String>) -> Option<String> {
+    let mut existing_env_vars = Vec::new();
+
+    for env_var_name in env_var_names {
+        if let Ok(env_var_value) = env::var(env_var_name) {
+            existing_env_vars.push(env_var_value);
+        }
+    }
+
+    existing_env_vars.first().map(|s| s.to_string())
+}
+
+fn evaluate_config(local_config: &config::Config) {
+    let env_var_names = local_config.environment.as_ref().unwrap();
+    let env_profile = get_profile_from_env(env_var_names)
+        .expect("please provide a profile via environment variables");
+
+    println!("env_profile: {:?}", env_profile);
 }
 
 #[tokio::main(flavor = "current_thread")]
 async fn not_main() {
-    let config_file_path = find_up("bwenv.toml", None).unwrap();
+    let local_config = parse_local_config().unwrap();
 
-    let _ = parse_config_file(&config_file_path);
-
-    println!("config file: {:?}", config_file_path);
+    println!("local_config: {:?}", local_config);
 
     let args = Args::parse();
 
