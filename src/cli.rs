@@ -52,9 +52,7 @@ impl CLI {
     pub fn new() -> Self {
         let args = Args::parse();
 
-        CLI {
-            args,
-        }
+        CLI { args }
     }
 
     pub fn get_program(&self) -> (String, Vec<String>) {

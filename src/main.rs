@@ -4,25 +4,12 @@ use std::{
     process::{Command, Stdio},
 };
 
-use bitwarden::secrets_manager::secrets::SecretIdentifiersByProjectRequest;
-use bitwarden::{
-    auth::request::AccessTokenLoginRequest,
-    client::client_settings::{ClientSettings, DeviceType},
-    secrets_manager::secrets::SecretGetRequest,
-    Client,
-};
-use uuid::Uuid;
-
+mod bitwarden;
 mod cli;
 mod config;
 
-use crate::cli::CLI;
 use crate::config::Config;
-
-const BW_IDENTITY_URL: &str = "https://identity.bitwarden.com";
-const BW_API_URL: &str = "https://api.bitwarden.com";
-const BW_USER_AGENT: &str = "Bitwarden Rust-SDK";
-const BW_DEVICE_TYPE: DeviceType = DeviceType::SDK;
+use crate::{bitwarden::BitwardenClient, cli::CLI};
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
@@ -86,41 +73,8 @@ async fn main() {
 
     cmd.env("TEST_ENV", "BLAH");
 
-    let mut bw_client = Client::new(Some(ClientSettings {
-        identity_url: BW_IDENTITY_URL.to_string(),
-        api_url: BW_API_URL.to_string(),
-        user_agent: BW_USER_AGENT.to_string(),
-        device_type: BW_DEVICE_TYPE,
-    }));
+    let mut bitwarden_client = BitwardenClient::new(env::var("BWS_ACCESS_TOKEN").unwrap()).await;
+    let secrets = bitwarden_client.get_secrets_by_project_id(project).await;
 
-    bw_client
-        .access_token_login(&AccessTokenLoginRequest {
-            access_token: env::var("BWS_ACCESS_TOKEN").unwrap(),
-        })
-        .await
-        .unwrap();
-
-    let secrets_by_project_request = SecretIdentifiersByProjectRequest {
-        project_id: Uuid::parse_str(project.as_str()).unwrap(),
-    };
-
-    let secret_identifiers = bw_client
-        .secrets()
-        .list_by_project(&secrets_by_project_request)
-        .await
-        .unwrap();
-
-    let mut secrets = Vec::new();
-
-    for secret_identifier in secret_identifiers.data {
-        let secret_get_request = SecretGetRequest {
-            id: secret_identifier.id,
-        };
-
-        let secret = bw_client.secrets().get(&secret_get_request).await.unwrap();
-
-        secrets.push([secret.key, secret.value]);
-    }
-
-    println!("Secrets: {:#?}", secrets);
+    println!("{:?}", secrets);
 }
