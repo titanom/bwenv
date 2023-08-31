@@ -3,10 +3,7 @@ use std::env;
 use bitwarden::{
     auth::request::AccessTokenLoginRequest,
     client::client_settings::{ClientSettings, DeviceType},
-    secrets_manager::secrets::{
-        SecretGetRequest, SecretIdentifiersByProjectRequest, SecretIdentifiersRequest,
-        SecretResponse,
-    },
+    secrets_manager::secrets::{SecretIdentifiersRequest, SecretGetRequest, SecretIdentifiersByProjectRequest, SecretResponse},
     Client,
 };
 use clap::Parser;
@@ -47,9 +44,7 @@ fn evaluate_config(config: &config::Config) -> [String; 1] {
     let project = &config.project;
 
     let project = profile.project.as_ref().unwrap_or_else(|| {
-        project
-            .as_ref()
-            .expect("please provide a project via environment variables or config file")
+        project.as_ref().expect("please provide a project via environment variables or config file")
     });
 
     [project.to_string()]
@@ -82,72 +77,19 @@ async fn main() {
         project_id: Uuid::parse_str(project.as_str()).unwrap(),
     };
 
-    let secret_identifiers = bw_client
-        .secrets()
-        .list_by_project(&secrets_by_project_request)
-        .await
-        .unwrap();
+    let secret_identifiers = bw_client.secrets().list_by_project(&secrets_by_project_request).await.unwrap();
 
-    // let mut secrets = Vec::new();
-    //
-    // for secret_identifier in secret_identifiers.data {
-    //     let secret_get_request = SecretGetRequest {
-    //         id: secret_identifier.id,
-    //     };
-    //
-    //     let secret = bw_client.secrets().get(&secret_get_request).await.unwrap();
-    //
-    //     secrets.push([secret.key, secret.value]);
-    // }
-
-    let length = secret_identifiers.data.len();
-
-    let (tx, mut rx) = tokio::sync::mpsc::channel(length);
+    let mut secrets = Vec::new();
 
     for secret_identifier in secret_identifiers.data {
-           let tx = tx.clone(); 
+        let secret_get_request = SecretGetRequest {
+            id: secret_identifier.id,
+        };
 
-               let secret_get_request = SecretGetRequest {
-                   id: secret_identifier.id
-               };
+        let secret = bw_client.secrets().get(&secret_get_request).await.unwrap();
 
-           tokio::spawn(async move {
-
-               match fetch_secret(&secret_get_request).await {
-                   Ok(secret) => {
-                       if tx.send(secret).await.is_err() {
-                            eprintln!("Failed to send secret");
-                       }
-                   }
-                   Err(err) => eprintln!("Failed to fetch secret: {}", err)
-               }
-           });
-    }
-
-    let mut secrets: Vec<Secret> = Vec::with_capacity(length);
-    for _ in 0..length {
-        if let Some(secret) = rx.recv().await {
-            secrets.push((secret.key, secret.value));
-        }
+        secrets.push([secret.key, secret.value]);
     }
 
     println!("Secrets: {:#?}", secrets);
-}
-
-async fn fetch_secret(
-    secret_get_request: &SecretGetRequest,
-) -> Result<SecretResponse, bitwarden::error::Error> {
-    let mut client = Client::new(Some(ClientSettings {
-        identity_url: BW_IDENTITY_URL.to_string(),
-        api_url: BW_API_URL.to_string(),
-        user_agent: BW_USER_AGENT.to_string(),
-        device_type: BW_DEVICE_TYPE,
-    }));
-    client
-        .access_token_login(&AccessTokenLoginRequest {
-            access_token: env::var("BWS_ACCESS_TOKEN").unwrap(),
-        })
-        .await
-        .unwrap();
-    client.secrets().get(secret_get_request).await
 }
