@@ -17,7 +17,7 @@ use uuid::Uuid;
 mod cli;
 mod config;
 
-use crate::{cli::Args, config::get_config};
+use crate::{cli::{Args, CLI}, config::get_config};
 
 const BW_IDENTITY_URL: &str = "https://identity.bitwarden.com";
 const BW_API_URL: &str = "https://api.bitwarden.com";
@@ -59,14 +59,15 @@ fn evaluate_config(config: &config::Config) -> [String; 1] {
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
+    let cli = CLI::new();
+    let (program, program_args) = cli.get_program();
+
     let config = get_config().expect("could not find config file");
     let [project] = evaluate_config(&config);
 
-    let args = Args::parse();
+    let mut cmd = Command::new(program);
 
-    let mut cmd = Command::new(&args.slop[0]);
-
-    cmd.args(&args.slop[1..]);
+    cmd.args(program_args);
 
     cmd.stdin(Stdio::inherit())
         .stdout(Stdio::piped())

@@ -1,4 +1,6 @@
-use clap::Parser;
+use std::process::{Command, Stdio};
+
+use clap::{Args as ClapArgs, Parser};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -40,4 +42,24 @@ pub struct Args {
     //     default_value_t = 3600
     // )]
     // pub revalidate: u64,
+}
+
+pub struct CLI {
+    args: Args,
+}
+
+impl CLI {
+    pub fn new() -> Self {
+        CLI {
+            args: Args::parse(),
+        }
+    }
+
+    pub fn get_program(&self) -> (String, Vec<String>) {
+        let slop = &self.args.slop;
+        let program = &slop[0];
+        let args = slop[1..].to_vec();
+
+        (program.to_owned(), args)
+    }
 }
