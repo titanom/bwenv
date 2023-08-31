@@ -1,9 +1,14 @@
-use std::env;
+use std::{
+    env,
+    io::{self, Read, Write},
+    process::{self, Command, Stdio},
+};
 
+use bitwarden::secrets_manager::secrets::SecretIdentifiersByProjectRequest;
 use bitwarden::{
     auth::request::AccessTokenLoginRequest,
     client::client_settings::{ClientSettings, DeviceType},
-    secrets_manager::secrets::{SecretIdentifiersRequest, SecretGetRequest, SecretIdentifiersByProjectRequest, SecretResponse},
+    secrets_manager::secrets::SecretGetRequest,
     Client,
 };
 use clap::Parser;
@@ -44,20 +49,76 @@ fn evaluate_config(config: &config::Config) -> [String; 1] {
     let project = &config.project;
 
     let project = profile.project.as_ref().unwrap_or_else(|| {
-        project.as_ref().expect("please provide a project via environment variables or config file")
+        project
+            .as_ref()
+            .expect("please provide a project via environment variables or config file")
     });
 
     [project.to_string()]
 }
-
-type Secret = (String, String);
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
     let config = get_config().expect("could not find config file");
     let [project] = evaluate_config(&config);
 
-    // let args = Args::parse();
+    let args = Args::parse();
+
+    let mut cmd = Command::new(&args.slop[0]);
+
+    cmd.args(&args.slop[1..]);
+
+    cmd.stdin(Stdio::inherit())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+
+    if let Ok(mut child) = cmd.spawn() {
+        let mut stdout = child.stdout.take().unwrap();
+        let mut stderr = child.stderr.take().unwrap();
+        let mut buffer = [0; 1024];
+
+        // Create separate threads to handle stdout and stderr
+        let stdout_thread = std::thread::spawn(move || loop {
+            match stdout.read(&mut buffer) {
+                Ok(0) => break,
+                Ok(n) => {
+                    if let Ok(s) = String::from_utf8(buffer[0..n].to_vec()) {
+                        print!("{}", s);
+                        io::stdout().flush().expect("Failed to flush stdout");
+                    }
+                }
+                Err(err) => {
+                    eprintln!("Error reading child process stdout: {:?}", err);
+                    break;
+                }
+            }
+        });
+
+        let stderr_thread = std::thread::spawn(move || loop {
+            match stderr.read(&mut buffer) {
+                Ok(0) => break,
+                Ok(n) => {
+                    if let Ok(s) = String::from_utf8(buffer[0..n].to_vec()) {
+                        eprint!("{}", s);
+                        io::stderr().flush().expect("Failed to flush stderr");
+                    }
+                }
+                Err(err) => {
+                    eprintln!("Error reading child process stderr: {:?}", err);
+                    break;
+                }
+            }
+        });
+
+        // Wait for the child process to finish and close the threads
+        let _ = child.wait();
+        stdout_thread.join().expect("stdout thread panicked");
+        stderr_thread.join().expect("stderr thread panicked");
+    }
+
+    cmd.env("TEST_ENV", "BLAH");
+
+    process::exit(0);
 
     let mut bw_client = Client::new(Some(ClientSettings {
         identity_url: BW_IDENTITY_URL.to_string(),
@@ -77,7 +138,11 @@ async fn main() {
         project_id: Uuid::parse_str(project.as_str()).unwrap(),
     };
 
-    let secret_identifiers = bw_client.secrets().list_by_project(&secrets_by_project_request).await.unwrap();
+    let secret_identifiers = bw_client
+        .secrets()
+        .list_by_project(&secrets_by_project_request)
+        .await
+        .unwrap();
 
     let mut secrets = Vec::new();
 

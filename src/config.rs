@@ -30,16 +30,16 @@ pub struct Profile {
 
 #[derive(Debug, Deserialize)]
 struct Cache {
-    max_age: Option<u64>,
-    stale_while_revalidate: Option<u64>,
-    directory: Option<String>,
+    // max_age: Option<u64>,
+    // stale_while_revalidate: Option<u64>,
+    // directory: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
     pub environment: Option<Vec<String>>,
-    cache: Option<Cache>,
-    preset: Option<Preset>,
+    // cache: Option<Cache>,
+    // preset: Option<Preset>,
     pub project: Option<String>,
     #[serde(flatten)]
     pub profiles: BTreeMap<String, Profile>,
