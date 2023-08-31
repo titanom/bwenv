@@ -16,7 +16,7 @@ async fn main() {
     let (program, program_args) = cli.get_program();
 
     let config = Config::new();
-    let project = config.evaluate();
+    let project_id = config.evaluate();
 
     let mut cmd = Command::new(program);
 
@@ -27,11 +27,9 @@ async fn main() {
         .stderr(Stdio::piped());
 
     let mut bitwarden_client = BitwardenClient::new(cli.args.token).await;
-    let secrets = bitwarden_client.get_secrets_by_project_id(project).await;
+    let secrets = bitwarden_client.get_secrets_by_project_id(project_id).await;
 
-    secrets.iter().for_each(|(key, value)| {
-        cmd.env(key, value);
-    });
+    cmd.envs(secrets);
 
     if let Ok(mut child) = cmd.spawn() {
         let mut stdout = child.stdout.take().unwrap();
