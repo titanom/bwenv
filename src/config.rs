@@ -23,9 +23,9 @@ impl<'de> Deserialize<'de> for Preset {
 }
 
 #[derive(Debug, Deserialize)]
-struct Profile {
-    project: Option<String>,
-    environment: Option<String>,
+pub struct Profile {
+    pub project: Option<String>,
+    pub environment: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -42,7 +42,7 @@ pub struct Config {
     preset: Option<Preset>,
     pub project: Option<String>,
     #[serde(flatten)]
-    profiles: BTreeMap<String, Profile>,
+    pub profiles: BTreeMap<String, Profile>,
 }
 
 pub fn find_up(filename: &str, max_parents: Option<i32>) -> Option<PathBuf> {
@@ -79,7 +79,7 @@ pub fn find_local_config() -> Option<PathBuf> {
     find_up("bwenv.toml", None)
 }
 
-pub fn parse_local_config() -> Result<Config, Error> {
+pub fn get_config() -> Result<Config, Error> {
     let config_file_path = find_local_config().unwrap();
     parse_config_file(&config_file_path)
 }

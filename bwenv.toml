@@ -1,4 +1,5 @@
 environment = ["MY_ENV", "NODE_ENV"]
+project = "p0"
 
 [cache]
 directory = "./node_modules/.cache/"
@@ -6,11 +7,10 @@ max_age = 3600
 stale_while_revalidate = 3600
 
 [profiles]
-[profiles.development]
+[development]
 alias = ["dev"]
-project = "p1"
+project = "227f4033-fdbb-482b-847c-b06600dc8e69"
 
-[profiles.production]
+[production]
 alias = ["prod"]
-project = "p2"
 cache_dir = "./node_modules/.cache/prod"

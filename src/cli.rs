@@ -7,7 +7,8 @@ pub struct Args {
         short,
         long,
         long_help = "Access token for the service account",
-        env = "BWS_ACCESS_TOKEN"
+        env = "BWS_ACCESS_TOKEN",
+        required = false
     )]
     pub token: String,
 
@@ -15,18 +16,18 @@ pub struct Args {
         short,
         long,
         long_help = "Secret manager project name",
-        required = true
+        required = false
     )]
     pub project: String,
 
-    #[arg(short, long, long_help = "Profile of the project", required = true)]
+    #[arg(long, long_help = "Profile of the project", required = false)]
     pub profile: String,
 
     #[arg(
         short,
         long,
         long_help = "Cache directory for the secrets",
-        required = true
+        required = false
     )]
     pub cache_dir: String,
 
