@@ -77,7 +77,4 @@ async fn main() {
         stdout_thread.join().expect("stdout thread panicked");
         stderr_thread.join().expect("stderr thread panicked");
     }
-
-
-    println!("{:?}", secrets);
 }
