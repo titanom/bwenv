@@ -56,10 +56,10 @@ impl Config {
         let env_profile = get_profile_from_env(env_var_names)
             .expect("please provide a profile via environment variables");
 
-        let profile = self.profiles.get(&env_profile).expect(&format!(
-            "Profile '{}' not found in config file",
-            env_profile
-        ));
+        let profile = self
+            .profiles
+            .get(&env_profile)
+            .unwrap_or_else(|| panic!("Profile '{}' not found in config file", env_profile));
 
         let project = &self.project;
 

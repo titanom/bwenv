@@ -1,6 +1,4 @@
-use std::process::{Command, Stdio};
-
-use clap::{Args as ClapArgs, Parser};
+use clap::Parser;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -44,15 +42,15 @@ pub struct Args {
     // pub revalidate: u64,
 }
 
-pub struct CLI {
+pub struct Cli {
     pub args: Args,
 }
 
-impl CLI {
+impl Cli {
     pub fn new() -> Self {
         let args = Args::parse();
 
-        CLI { args }
+        Cli { args }
     }
 
     pub fn get_program(&self) -> (String, Vec<String>) {

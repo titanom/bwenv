@@ -9,11 +9,11 @@ mod cli;
 mod config;
 
 use crate::config::Config;
-use crate::{bitwarden::BitwardenClient, cli::CLI};
+use crate::{bitwarden::BitwardenClient, cli::Cli};
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
-    let cli = CLI::new();
+    let cli = Cli::new();
     let (program, program_args) = cli.get_program();
 
     let config = Config::new();

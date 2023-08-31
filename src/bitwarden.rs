@@ -27,7 +27,7 @@ impl BitwardenClient {
             identity_url: identity_url.to_owned(),
             api_url: api_url.to_owned(),
             user_agent: user_agent.to_owned(),
-            device_type: device_type.clone(),
+            device_type,
         }));
 
         client
