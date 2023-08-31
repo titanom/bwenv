@@ -27,6 +27,13 @@ async fn main() {
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
 
+    let mut bitwarden_client = BitwardenClient::new(env::var("BWS_ACCESS_TOKEN").unwrap()).await;
+    let secrets = bitwarden_client.get_secrets_by_project_id(project).await;
+
+    secrets.iter().for_each(|(key, value)| {
+        cmd.env(key, value);
+    });
+
     if let Ok(mut child) = cmd.spawn() {
         let mut stdout = child.stdout.take().unwrap();
         let mut stderr = child.stderr.take().unwrap();
@@ -71,10 +78,6 @@ async fn main() {
         stderr_thread.join().expect("stderr thread panicked");
     }
 
-    cmd.env("TEST_ENV", "BLAH");
-
-    let mut bitwarden_client = BitwardenClient::new(env::var("BWS_ACCESS_TOKEN").unwrap()).await;
-    let secrets = bitwarden_client.get_secrets_by_project_id(project).await;
 
     println!("{:?}", secrets);
 }
