@@ -23,7 +23,7 @@ impl<'de> Deserialize<'de> for Preset {
 }
 
 #[derive(Debug, Deserialize)]
-struct Environment {
+struct Profile {
     project: Option<String>,
     environment: Option<String>,
 }
@@ -42,7 +42,7 @@ pub struct Config {
     preset: Option<Preset>,
     project: Option<String>,
     #[serde(flatten)]
-    environments: BTreeMap<String, Environment>,
+    profiles: BTreeMap<String, Profile>,
 }
 
 pub fn find_up(filename: &str, max_parents: Option<i32>) -> Option<PathBuf> {

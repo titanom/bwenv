@@ -19,8 +19,8 @@ pub struct Args {
     )]
     pub project: String,
 
-    #[arg(short, long, long_help = "Environment of the project", required = true)]
-    pub environment: String,
+    #[arg(short, long, long_help = "Profile of the project", required = true)]
+    pub profile: String,
 
     #[arg(
         short,

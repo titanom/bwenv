@@ -5,12 +5,12 @@ directory = "./node_modules/.cache/"
 max_age = 3600
 stale_while_revalidate = 3600
 
-[environments]
-[environments.development]
+[profiles]
+[profiles.development]
 alias = ["dev"]
 project = "p1"
 
-[environments.production]
+[profiles.production]
 alias = ["prod"]
 project = "p2"
 cache_dir = "./node_modules/.cache/prod"
