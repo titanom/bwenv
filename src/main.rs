@@ -1,5 +1,4 @@
 use std::{
-    env,
     io::{self, Read, Write},
     process::{Command, Stdio},
 };
@@ -27,7 +26,7 @@ async fn main() {
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
 
-    let mut bitwarden_client = BitwardenClient::new(env::var("BWS_ACCESS_TOKEN").unwrap()).await;
+    let mut bitwarden_client = BitwardenClient::new(cli.args.token).await;
     let secrets = bitwarden_client.get_secrets_by_project_id(project).await;
 
     secrets.iter().for_each(|(key, value)| {
