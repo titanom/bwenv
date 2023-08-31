@@ -45,13 +45,15 @@ pub struct Args {
 }
 
 pub struct CLI {
-    args: Args,
+    pub args: Args,
 }
 
 impl CLI {
     pub fn new() -> Self {
+        let args = Args::parse();
+
         CLI {
-            args: Args::parse(),
+            args,
         }
     }
 

@@ -45,7 +45,35 @@ pub struct Config {
     pub profiles: BTreeMap<String, Profile>,
 }
 
-pub fn find_up(filename: &str, max_parents: Option<i32>) -> Option<PathBuf> {
+impl Config {
+    pub fn new() -> Self {
+        let config_file_path = find_local_config().unwrap();
+        parse_config_file(&config_file_path).unwrap()
+    }
+
+    pub fn evaluate(&self) -> String {
+        let env_var_names = self.environment.as_ref().unwrap();
+        let env_profile = get_profile_from_env(env_var_names)
+            .expect("please provide a profile via environment variables");
+
+        let profile = self.profiles.get(&env_profile).expect(&format!(
+            "Profile '{}' not found in config file",
+            env_profile
+        ));
+
+        let project = &self.project;
+
+        let project = profile.project.as_ref().unwrap_or_else(|| {
+            project
+                .as_ref()
+                .expect("please provide a project via environment variables or config file")
+        });
+
+        project.to_string()
+    }
+}
+
+fn find_up(filename: &str, max_parents: Option<i32>) -> Option<PathBuf> {
     let current_dir = env::current_dir().ok()?;
     let mut current_path = current_dir.as_path();
 
@@ -65,7 +93,7 @@ pub fn find_up(filename: &str, max_parents: Option<i32>) -> Option<PathBuf> {
     None
 }
 
-pub fn parse_config_file(file_path: &PathBuf) -> Result<Config, Error> {
+fn parse_config_file(file_path: &PathBuf) -> Result<Config, Error> {
     let mut toml_str = String::new();
     let mut file = File::open(file_path).unwrap();
     file.read_to_string(&mut toml_str).unwrap();
@@ -75,11 +103,18 @@ pub fn parse_config_file(file_path: &PathBuf) -> Result<Config, Error> {
     Ok(config)
 }
 
-pub fn find_local_config() -> Option<PathBuf> {
+fn find_local_config() -> Option<PathBuf> {
     find_up("bwenv.toml", None)
 }
 
-pub fn get_config() -> Result<Config, Error> {
-    let config_file_path = find_local_config().unwrap();
-    parse_config_file(&config_file_path)
+fn get_profile_from_env(env_var_names: &Vec<String>) -> Option<String> {
+    let mut existing_env_vars = Vec::new();
+
+    for env_var_name in env_var_names {
+        if let Ok(env_var_value) = env::var(env_var_name) {
+            existing_env_vars.push(env_var_value);
+        }
+    }
+
+    existing_env_vars.first().map(|s| s.to_string())
 }
