@@ -85,7 +85,7 @@ impl Config {
         Ok(ConfigEvaluation {
             profile_name: profile_name.to_string(),
             project_id: project.to_string(),
-            max_age
+            max_age,
         })
     }
 }

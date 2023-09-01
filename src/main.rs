@@ -26,7 +26,7 @@ async fn main() {
     let ConfigEvaluation {
         project_id,
         profile_name,
-        max_age
+        max_age,
     } = config.evaluate().unwrap();
 
     let cache = Cache::new(PathBuf::from(config.cache.path));
