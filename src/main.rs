@@ -1,12 +1,15 @@
 use std::{
     io::{self, Read, Write},
+    path::PathBuf,
     process::{Command, Stdio},
 };
 
 mod bitwarden;
+mod cache;
 mod cli;
 mod config;
 
+use crate::cache::Cache;
 use crate::config::Config;
 use crate::{bitwarden::BitwardenClient, cli::Cli};
 
@@ -18,6 +21,10 @@ async fn main() {
     let config = Config::new();
     let project_id = config.evaluate();
 
+    let cache = Cache::new(PathBuf::from(config.cache.path));
+
+    let cached_env = cache.get("development");
+
     let mut cmd = Command::new(program);
 
     cmd.args(program_args);
@@ -26,8 +33,18 @@ async fn main() {
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
 
-    let mut bitwarden_client = BitwardenClient::new(cli.args.token).await;
-    let secrets = bitwarden_client.get_secrets_by_project_id(project_id).await;
+    let secrets = match cached_env {
+        Some(cache_entry) => cache_entry
+            .variables
+            .into_iter()
+            .collect::<Vec<(String, String)>>(),
+        None => {
+            let mut bitwarden_client = BitwardenClient::new(cli.args.token).await;
+            bitwarden_client.get_secrets_by_project_id(project_id).await
+        }
+    };
+
+    cache.set("development", &secrets);
 
     cmd.envs(secrets);
 

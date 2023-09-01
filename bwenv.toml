@@ -2,7 +2,7 @@ environment = ["MY_ENV", "NODE_ENV"]
 project = "p0"
 
 [cache]
-directory = "./node_modules/.cache/"
+path = "./node_modules/.cache/"
 max_age = 3600
 stale_while_revalidate = 3600
 
