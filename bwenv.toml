@@ -1,15 +1,12 @@
 environment = ["MY_ENV", "NODE_ENV"]
-project = "p0"
+# project = "p0"
 
 [cache]
 path = "./node_modules/.cache/"
-max_age = 3600
 
 [profiles]
 [development]
-alias = ["dev"]
 project = "227f4033-fdbb-482b-847c-b06600dc8e69"
 
 [production]
-alias = ["prod"]
-cache_dir = "./node_modules/.cache/prod"
+project = "227f4033-fdbb-482b-847c-b06600dc8e69"
