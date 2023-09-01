@@ -45,33 +45,47 @@ pub struct Config {
     pub profiles: BTreeMap<String, Profile>,
 }
 
+pub struct ConfigEvaluation {
+    pub profile_name: String,
+    pub project_id: String,
+}
+
+#[derive(Debug)]
+pub enum ConfigEvaluationError {
+    NoProfile,
+}
+
 impl Config {
     pub fn new() -> Self {
         let config_file_path = find_local_config().unwrap();
         parse_config_file(&config_file_path).unwrap()
     }
 
-    pub fn evaluate(&self) -> (String, String) {
-        let env_var_names = self.environment.as_ref().unwrap();
-        let env_profile = get_profile_from_env(env_var_names)
-            .expect("please provide a profile via environment variables");
+    pub fn evaluate(&self) -> Result<ConfigEvaluation, ConfigEvaluationError> {
+        let env_var_names = self
+            .environment
+            .as_ref()
+            .ok_or_else(|| ConfigEvaluationError::NoProfile)?;
+
+        let profile_name =
+            get_profile_from_env(env_var_names).ok_or_else(|| ConfigEvaluationError::NoProfile)?;
 
         let profile = self
             .profiles
-            .get(&env_profile)
-            .unwrap_or_else(|| panic!("Profile '{}' not found in config file", env_profile));
-
-        let profile_name = &env_profile;
-
-        let project = &self.project;
+            .get(&profile_name)
+            .ok_or_else(|| ConfigEvaluationError::NoProfile)?;
 
         let project = profile.project.as_ref().unwrap_or_else(|| {
-            project
+            &self
+                .project
                 .as_ref()
                 .expect("please provide a project via environment variables or config file")
         });
 
-        (project.to_owned(), profile_name.to_owned())
+        Ok(ConfigEvaluation {
+            profile_name: profile_name.to_string(),
+            project_id: project.to_string(),
+        })
     }
 }
 

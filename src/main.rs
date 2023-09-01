@@ -9,6 +9,8 @@ mod cache;
 mod cli;
 mod config;
 
+use config::ConfigEvaluation;
+
 use crate::cache::Cache;
 use crate::config::Config;
 use crate::{bitwarden::BitwardenClient, cli::Cli};
@@ -19,7 +21,10 @@ async fn main() {
     let (program, program_args) = cli.get_program();
 
     let config = Config::new();
-    let (project_id, profile_name) = config.evaluate();
+    let ConfigEvaluation {
+        project_id,
+        profile_name,
+    } = config.evaluate().unwrap();
 
     let cache = Cache::new(PathBuf::from(config.cache.path));
 
