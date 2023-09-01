@@ -8,7 +8,9 @@ mod bitwarden;
 mod cache;
 mod cli;
 mod config;
+mod error;
 
+use cache::CacheEntry;
 use config::ConfigEvaluation;
 
 use crate::cache::Cache;
@@ -28,7 +30,17 @@ async fn main() {
 
     let cache = Cache::new(PathBuf::from(config.cache.path));
 
-    let cached_env = cache.get(&profile_name);
+    let CacheEntry {
+        variables: secrets, ..
+    } = cache
+        .get_or_revalidate(&profile_name, move || async {
+            let mut bitwarden_client = BitwardenClient::new(cli.args.token).await;
+            bitwarden_client.get_secrets_by_project_id(project_id).await
+        })
+        .await
+        .unwrap();
+
+    let secrets = &secrets.into_iter().collect::<Vec<(String, String)>>();
 
     let mut cmd = Command::new(program);
 
@@ -38,20 +50,7 @@ async fn main() {
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
 
-    let secrets = match cached_env {
-        Some(cache_entry) => cache_entry
-            .variables
-            .into_iter()
-            .collect::<Vec<(String, String)>>(),
-        None => {
-            let mut bitwarden_client = BitwardenClient::new(cli.args.token).await;
-            bitwarden_client.get_secrets_by_project_id(project_id).await
-        }
-    };
-
-    cache.set("development", &secrets);
-
-    cmd.envs(secrets);
+    cmd.envs(secrets.to_owned());
 
     if let Ok(mut child) = cmd.spawn() {
         let mut stdout = child.stdout.take().unwrap();

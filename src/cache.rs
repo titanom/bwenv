@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::{collections::BTreeMap, fs, path::PathBuf, time::SystemTime};
+use std::{collections::BTreeMap, fs, future::Future, path::PathBuf, time::SystemTime};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CacheEntry {
@@ -25,6 +25,25 @@ impl Cache {
         Some(cache_entry)
     }
 
+    pub async fn get_or_revalidate<RevalidateFn, ReturnValue>(
+        &self,
+        profile: &str,
+        revalidate: RevalidateFn,
+    ) -> Option<CacheEntry>
+    where
+        RevalidateFn: FnOnce() -> ReturnValue,
+        ReturnValue: Future<Output = Vec<(String, String)>>,
+    {
+        match self.is_stale(profile, 100) {
+            true => {
+                let secrets = revalidate().await;
+                self.set(profile, &secrets);
+                self.get(profile)
+            }
+            false => self.get(profile),
+        }
+    }
+
     pub fn set(&self, profile: &str, vars: &Vec<(String, String)>) -> () {
         let cache_file_path = self.get_cache_file_path(profile);
         fs::create_dir_all(self.directory.clone()).unwrap();
@@ -39,12 +58,15 @@ impl Cache {
         std::fs::write(cache_file_path, cache_entry).unwrap();
     }
 
-    pub fn is_stale(&self, profile: &str, seconds: u64) -> bool {
-        let cache_entry = self.get(profile).unwrap();
+    fn is_stale(&self, profile: &str, seconds: u64) -> bool {
+        let cache_entry = self.get(profile);
 
-        let is_stale = is_date_older_than_n_seconds(cache_entry.last_revalidation, seconds);
-
-        is_stale
+        match cache_entry {
+            None => return true,
+            Some(cache_entry) => {
+                is_date_older_than_n_seconds(cache_entry.last_revalidation, seconds)
+            }
+        }
     }
 
     fn get_cache_file_path(&self, profile: &str) -> PathBuf {

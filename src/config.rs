@@ -1,6 +1,8 @@
 use serde::Deserialize;
 use std::{collections::BTreeMap, env, fs::File, io::Read, path::PathBuf};
-use toml::de::Error;
+use toml;
+
+use crate::error::Error;
 
 #[derive(Debug)]
 enum Preset {
@@ -50,30 +52,25 @@ pub struct ConfigEvaluation {
     pub project_id: String,
 }
 
-#[derive(Debug)]
-pub enum ConfigEvaluationError {
-    NoProfile,
-}
-
 impl Config {
     pub fn new() -> Self {
         let config_file_path = find_local_config().unwrap();
         parse_config_file(&config_file_path).unwrap()
     }
 
-    pub fn evaluate(&self) -> Result<ConfigEvaluation, ConfigEvaluationError> {
+    pub fn evaluate(&self) -> Result<ConfigEvaluation, Error> {
         let env_var_names = self
             .environment
             .as_ref()
-            .ok_or_else(|| ConfigEvaluationError::NoProfile)?;
+            .ok_or_else(|| Error::NoProfileInput)?;
 
         let profile_name =
-            get_profile_from_env(env_var_names).ok_or_else(|| ConfigEvaluationError::NoProfile)?;
+            get_profile_from_env(env_var_names).ok_or_else(|| Error::NoProfileInput)?;
 
         let profile = self
             .profiles
             .get(&profile_name)
-            .ok_or_else(|| ConfigEvaluationError::NoProfile)?;
+            .ok_or_else(|| Error::ProfileNotConfigured)?;
 
         let project = profile.project.as_ref().unwrap_or_else(|| {
             &self
