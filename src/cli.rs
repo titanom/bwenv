@@ -7,6 +7,7 @@ pub struct Args {
         short,
         long,
         long_help = "Access token for the service account",
+        help = "Access token for the service account",
         env = "BWS_ACCESS_TOKEN",
         required = false
     )]

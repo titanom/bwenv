@@ -250,6 +250,7 @@ version = "0.1.0"
 dependencies = [
  "bitwarden",
  "clap",
+ "clap-markdown",
  "serde",
  "tokio",
  "toml",
@@ -321,6 +322,15 @@ checksum = "6a13b88d2c62ff462f88e4a121f17a82c1af05693a2f192b5c38d14de73c19f6"
 dependencies = [
  "clap_builder",
  "clap_derive",
+]
+
+[[package]]
+name = "clap-markdown"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "325f50228f76921784b6d9f2d62de6778d834483248eefecd27279174797e579"
+dependencies = [
+ "clap",
 ]
 
 [[package]]

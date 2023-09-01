@@ -11,14 +11,20 @@ mod config;
 mod error;
 
 use cache::CacheEntry;
+// use cli::Args;
 use config::ConfigEvaluation;
 
 use crate::cache::Cache;
 use crate::config::Config;
 use crate::{bitwarden::BitwardenClient, cli::Cli};
 
+// use clap_markdown;
+
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
+    // generate docs
+    // let markdown: String = clap_markdown::help_markdown::<Args>();
+    // println!("{}", markdown);
     let cli = Cli::new();
     let (program, program_args) = cli.get_program();
 
