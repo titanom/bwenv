@@ -51,7 +51,7 @@ impl Config {
         parse_config_file(&config_file_path).unwrap()
     }
 
-    pub fn evaluate(&self) -> String {
+    pub fn evaluate(&self) -> (String, String) {
         let env_var_names = self.environment.as_ref().unwrap();
         let env_profile = get_profile_from_env(env_var_names)
             .expect("please provide a profile via environment variables");
@@ -61,6 +61,8 @@ impl Config {
             .get(&env_profile)
             .unwrap_or_else(|| panic!("Profile '{}' not found in config file", env_profile));
 
+        let profile_name = &env_profile;
+
         let project = &self.project;
 
         let project = profile.project.as_ref().unwrap_or_else(|| {
@@ -69,7 +71,7 @@ impl Config {
                 .expect("please provide a project via environment variables or config file")
         });
 
-        project.to_string()
+        (project.to_owned(), profile_name.to_owned())
     }
 }
 

@@ -19,11 +19,11 @@ async fn main() {
     let (program, program_args) = cli.get_program();
 
     let config = Config::new();
-    let project_id = config.evaluate();
+    let (project_id, profile_name) = config.evaluate();
 
     let cache = Cache::new(PathBuf::from(config.cache.path));
 
-    let cached_env = cache.get("development");
+    let cached_env = cache.get(&profile_name);
 
     let mut cmd = Command::new(program);
 
