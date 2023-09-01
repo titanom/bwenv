@@ -32,7 +32,7 @@ pub struct Profile {
 
 #[derive(Debug, Deserialize)]
 pub struct Cache {
-    // max_age: Option<u64>,
+    pub max_age: Option<u64>,
     // stale_while_revalidate: Option<u64>,
     pub path: String,
 }
@@ -50,6 +50,7 @@ pub struct Config {
 pub struct ConfigEvaluation {
     pub profile_name: String,
     pub project_id: String,
+    pub max_age: u64,
 }
 
 impl Config {
@@ -59,6 +60,8 @@ impl Config {
     }
 
     pub fn evaluate(&self) -> Result<ConfigEvaluation, Error> {
+        let max_age = self.cache.max_age.unwrap_or(86400);
+
         let env_var_names = self
             .environment
             .as_ref()
@@ -82,6 +85,7 @@ impl Config {
         Ok(ConfigEvaluation {
             profile_name: profile_name.to_string(),
             project_id: project.to_string(),
+            max_age
         })
     }
 }

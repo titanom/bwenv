@@ -4,7 +4,6 @@ project = "p0"
 [cache]
 path = "./node_modules/.cache/"
 max_age = 3600
-stale_while_revalidate = 3600
 
 [profiles]
 [development]

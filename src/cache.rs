@@ -28,13 +28,14 @@ impl Cache {
     pub async fn get_or_revalidate<RevalidateFn, ReturnValue>(
         &self,
         profile: &str,
+        max_age: u64,
         revalidate: RevalidateFn,
     ) -> Option<CacheEntry>
     where
         RevalidateFn: FnOnce() -> ReturnValue,
         ReturnValue: Future<Output = Vec<(String, String)>>,
     {
-        match self.is_stale(profile, 100) {
+        match self.is_stale(profile, max_age) {
             true => {
                 let secrets = revalidate().await;
                 self.set(profile, &secrets);

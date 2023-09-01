@@ -26,6 +26,7 @@ async fn main() {
     let ConfigEvaluation {
         project_id,
         profile_name,
+        max_age
     } = config.evaluate().unwrap();
 
     let cache = Cache::new(PathBuf::from(config.cache.path));
@@ -33,7 +34,7 @@ async fn main() {
     let CacheEntry {
         variables: secrets, ..
     } = cache
-        .get_or_revalidate(&profile_name, move || async {
+        .get_or_revalidate(&profile_name, max_age, move || async {
             let mut bitwarden_client = BitwardenClient::new(cli.args.token).await;
             bitwarden_client.get_secrets_by_project_id(project_id).await
         })
