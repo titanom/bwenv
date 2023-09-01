@@ -27,7 +27,7 @@ async fn main() {
         project_id,
         profile_name,
         max_age,
-    } = config.evaluate().unwrap();
+    } = config.evaluate(&cli.args).unwrap();
 
     let cache = Cache::new(PathBuf::from(config.cache.path));
 

@@ -13,7 +13,7 @@ pub struct Args {
     pub token: String,
 
     #[arg(short, long, long_help, env = "BWENV_PROFILE", required = false)]
-    pub profile: String,
+    pub profile: Option<String>,
 
     #[arg(last = true)]
     pub slop: Vec<String>,
