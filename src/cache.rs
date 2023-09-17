@@ -45,7 +45,7 @@ impl Cache {
         }
     }
 
-    pub fn set(&self, profile: &str, vars: &Vec<(String, String)>) -> () {
+    pub fn set(&self, profile: &str, vars: &[(String, String)]) {
         let cache_file_path = self.get_cache_file_path(profile);
         fs::create_dir_all(self.directory.clone()).unwrap();
         let cache_entry = CacheEntry {
@@ -53,7 +53,7 @@ impl Cache {
                 .duration_since(SystemTime::UNIX_EPOCH)
                 .expect("SystemTime before UNIX EPOCH!")
                 .as_millis() as u64,
-            variables: vars.to_owned().into_iter().collect(),
+            variables: vars.iter().cloned().collect(),
         };
         let cache_entry = toml::to_string(&cache_entry).unwrap();
         std::fs::write(cache_file_path, cache_entry).unwrap();
@@ -63,7 +63,7 @@ impl Cache {
         let cache_entry = self.get(profile);
 
         match cache_entry {
-            None => return true,
+            None => true,
             Some(cache_entry) => {
                 is_date_older_than_n_seconds(cache_entry.last_revalidation, seconds)
             }

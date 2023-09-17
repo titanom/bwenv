@@ -1,6 +1,5 @@
 use serde::Deserialize;
 use std::{collections::BTreeMap, env, fs::File, io::Read, path::PathBuf};
-use toml;
 
 use crate::cli::Args;
 use crate::error::Error;
@@ -63,24 +62,20 @@ impl Config {
     pub fn evaluate(&self, cli_args: &Args) -> Result<ConfigEvaluation, Error> {
         let max_age = self.cache.max_age.unwrap_or(86400);
 
-        let env_var_names = self
-            .environment
-            .as_ref()
-            .ok_or_else(|| Error::NoProfileInput)?;
+        let env_var_names = self.environment.as_ref().ok_or(Error::NoProfileInput)?;
 
         let profile_name = cli_args
             .profile
             .clone()
-            .unwrap_or_else(|| get_profile_from_env(env_var_names).expect("no profile"));
+            .unwrap_or(get_profile_from_env(env_var_names).expect("no profile"));
 
         let profile = self
             .profiles
             .get(&profile_name)
-            .ok_or_else(|| Error::ProfileNotConfigured)?;
+            .ok_or(Error::ProfileNotConfigured)?;
 
         let project = profile.project.as_ref().unwrap_or_else(|| {
-            &self
-                .project
+            self.project
                 .as_ref()
                 .expect("please provide a project via environment variables or config file")
         });
