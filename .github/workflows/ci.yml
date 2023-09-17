@@ -57,7 +57,7 @@ jobs:
       - name: Build for x86_64-unknown-linux-gnu
         uses: actions-rs/cargo@v1
         with:
-          command: cargo build
+          command: build
           args: --release --target x86_64-unknown-linux-gnu
 
   release-apple-silicon:
@@ -77,5 +77,5 @@ jobs:
       - name: Build for aarch64-apple-darwin
         uses: actions-rs/cargo@v1
         with:
-          command: cargo build
+          command: build
           args: --release --target aarch64-apple-darwin
