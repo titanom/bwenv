@@ -57,11 +57,15 @@ impl Cli {
         Cli { args }
     }
 
-    pub fn get_program(&self) -> (String, Vec<String>) {
+    pub fn get_program(&self) -> Option<(String, Vec<String>)> {
         let slop = &self.args.slop;
-        let program = &slop[0];
-        let args = slop[1..].to_vec();
+        match &slop.get(0) {
+            Some(program) => {
+                let args = slop[1..].to_vec();
 
-        (program.to_owned(), args)
+                Some((program.to_string(), args))
+            }
+            None => None,
+        }
     }
 }

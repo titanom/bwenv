@@ -1,3 +1,4 @@
+use simple_logger::SimpleLogger;
 use std::{
     io::{self, Read, Write},
     path::PathBuf,
@@ -22,11 +23,21 @@ use crate::{bitwarden::BitwardenClient, cli::Cli};
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
+    SimpleLogger::new().init().unwrap();
+
     // generate docs
     // let markdown: String = clap_markdown::help_markdown::<Args>();
     // println!("{}", markdown);
     let cli = Cli::new();
-    let (program, program_args) = cli.get_program();
+    let (program, program_args) = match cli.get_program() {
+        Some(t) => t,
+        None => {
+            log::error!("no slop provided");
+            std::process::exit(1)
+        }
+    };
+
+    println!("{:?}", program);
 
     let config = Config::new();
     let ConfigEvaluation {
