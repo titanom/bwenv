@@ -4,26 +4,6 @@ use std::{collections::BTreeMap, env, fs::File, io::Read, path::PathBuf};
 use crate::cli::Args;
 use crate::error::Error;
 
-#[derive(Debug)]
-enum Preset {
-    Node,
-    Python,
-}
-
-impl<'de> Deserialize<'de> for Preset {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let s: String = Deserialize::deserialize(deserializer)?;
-        match s.to_lowercase().as_str() {
-            "node" => Ok(Preset::Node),
-            "python" => Ok(Preset::Python),
-            _ => Err(serde::de::Error::custom(format!("unknown preset: {}", s))),
-        }
-    }
-}
-
 #[derive(Debug, Deserialize)]
 pub struct Profile {
     pub project: Option<String>,
@@ -41,7 +21,6 @@ pub struct Cache {
 pub struct Config {
     pub environment: Option<Vec<String>>,
     pub cache: Cache,
-    // preset: Option<Preset>,
     pub project: Option<String>,
     #[serde(flatten)]
     pub profiles: BTreeMap<String, Profile>,
