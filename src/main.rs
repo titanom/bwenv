@@ -1,4 +1,4 @@
-use simple_logger::SimpleLogger;
+use log::Level;
 use std::{
     io::{self, Read, Write},
     path::PathBuf,
@@ -23,7 +23,7 @@ use crate::{bitwarden::BitwardenClient, cli::Cli};
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
-    SimpleLogger::new().init().unwrap();
+    let _ = simple_logger::init_with_level(Level::Error);
 
     // generate docs
     // let markdown: String = clap_markdown::help_markdown::<Args>();
@@ -36,8 +36,6 @@ async fn main() {
             std::process::exit(1)
         }
     };
-
-    println!("{:?}", program);
 
     let config = Config::new();
     let ConfigEvaluation {
