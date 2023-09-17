@@ -46,7 +46,7 @@ impl Config {
         let profile_name = cli_args
             .profile
             .clone()
-            .unwrap_or(get_profile_from_env(env_var_names).expect("no profile"));
+            .unwrap_or_else(|| get_profile_from_env(env_var_names).expect("no profile"));
 
         let profile = self
             .profiles
