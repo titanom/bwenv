@@ -53,6 +53,7 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
+          target: x86_64-unknown-linux-gnu
 
       - name: Build for x86_64-unknown-linux-gnu
         uses: actions-rs/cargo@v1
@@ -73,6 +74,7 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
+          target: aarch64-apple-darwin
 
       - name: Build for aarch64-apple-darwin
         uses: actions-rs/cargo@v1
