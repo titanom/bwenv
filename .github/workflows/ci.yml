@@ -1,4 +1,8 @@
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - master
+  pull_request:
 
 name: CI
 
@@ -35,3 +39,43 @@ jobs:
         with:
           command: clippy
           args: -- -D warnings
+
+  release-linux:
+    name: Release for x86_64-unknown-linux-gnu
+    needs: check
+    # if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: mozilla-actions/sccache-action@v0.0.3
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Build for x86_64-unknown-linux-gnu
+        uses: actions-rs/cargo@v1
+        with:
+          command: cargo build
+          args: --release --target x86_64-unknown-linux-gnu
+
+  release-apple-silicon:
+    name: Release for aarch64-apple-darwin
+    needs: check
+    # if: github.ref == 'refs/heads/master'
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: mozilla-actions/sccache-action@v0.0.3
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Build for aarch64-apple-darwin
+        uses: actions-rs/cargo@v1
+        with:
+          command: cargo build
+          args: --release --target aarch64-apple-darwin
