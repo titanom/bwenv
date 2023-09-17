@@ -26,7 +26,7 @@ Unzip the archive & add it to PATH:
 ```sh
 # replace <target> with the name of the downloaded archive
 unzip ~/Downloads/<target>.zip
-mv ~/Download/<target>/bwenv ~/.local/bin
+mv ~/Downloads/<target>/bwenv ~/.local/bin
 chmod +x ~/.local/bin/bwenv
 ```
 
