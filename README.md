@@ -2,7 +2,7 @@
 
 ## Installation
 
-Using `cargo`
+### Using `cargo`
 ```sh
 cargo install --git ssh://git@github.com/titanom/bwenv-rs.git
 ```
@@ -15,6 +15,21 @@ cargo install --git ssh://git@github.com/titanom/bwenv-rs.git
 [net]
 git-fetch-with-cli = true
 ```
+
+### Manual Download
+Download the latest release from GitHub for your operating system.  
+Available targets include:
+- aarch64-apple-darwin (MacOS ARM)
+- x84_64-unknown-linux-gnu (GNU-based x86_64 linux distros)
+
+Unzip the archive & add it to PATH:
+```sh
+# replace <target> with the name of the downloaded archive
+unzip ~/Downloads/<target>.zip
+mv ~/Downloads/<target>/bwenv ~/.local/bin
+chmod +x ~/.local/bin/bwenv
+```
+
 
 ## Usage
 
