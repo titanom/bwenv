@@ -43,7 +43,7 @@ jobs:
   build-linux:
     name: Build for x86_64-unknown-linux-gnu
     needs: check
-    # if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -70,7 +70,7 @@ jobs:
   build-apple-silicon:
     name: Build aarch64-apple-darwin
     needs: check
-    # if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master'
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
@@ -99,7 +99,7 @@ jobs:
     needs:
       - build-linux
       - build-apple-silicon
-    # if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -117,10 +117,10 @@ jobs:
           path: ./aarch64-apple-darwin
 
       - name: Create archive for x86_64-unknown-linux-gnu
-        run: zip -r -j x86_64-unknown-linux-gnu.zip x86_64-unknown-linux-gnu/bwenv
+        run: zip -r -j bwenv-x86_64-unknown-linux-gnu.zip x86_64-unknown-linux-gnu/bwenv
 
       - name: Create archive for aarch64-apple-darwin
-        run: zip -r -j aarch64-apple-darwin.zip aarch64-apple-darwin/bwenv
+        run: zip -r -j bwenv-aarch64-apple-darwin.zip aarch64-apple-darwin/bwenv
 
       - name: Read version from Cargo.toml
         id: get_version
@@ -133,7 +133,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            ./x86_64-unknown-linux-gnu.zip
-            ./aarch64-apple-darwin.zip
+            ./bwenv-x86_64-unknown-linux-gnu.zip
+            ./bwenv-aarch64-apple-darwin.zip
           tag_name: "v${{ steps.get_version.outputs.version }}"
           name: "Release v${{ steps.get_version.outputs.version }}"
