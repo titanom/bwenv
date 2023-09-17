@@ -40,8 +40,8 @@ jobs:
           command: clippy
           args: -- -D warnings
 
-  release-linux:
-    name: Release for x86_64-unknown-linux-gnu
+  build-linux:
+    name: Build for x86_64-unknown-linux-gnu
     needs: check
     # if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
@@ -61,8 +61,8 @@ jobs:
           command: build
           args: --release --target x86_64-unknown-linux-gnu
 
-  release-apple-silicon:
-    name: Release for aarch64-apple-darwin
+  build-apple-silicon:
+    name: Build aarch64-apple-darwin
     needs: check
     # if: github.ref == 'refs/heads/master'
     runs-on: macos-latest
@@ -81,3 +81,24 @@ jobs:
         with:
           command: build
           args: --release --target aarch64-apple-darwin
+
+  release:
+    name: Release
+    needs:
+      - build-linux
+      - build-apple-silicon
+    # if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Read version from Cargo.toml
+        id: get_version
+        run: echo "::set-output name=version$(awk -F' = ' '/^version/ {gsub(/"/, "", $2); print $2}' Cargo.toml)"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            ./target/x86_64-unknown-linux-gnu/release/bwenv
+            ./target/aarch64-apple-darwin/release/bwenv
+          tag_name: "v${{ steps.get_version.outputs.version }}"
+          release_name: "Release v${{ steps.get_version.outputs.version }}"
