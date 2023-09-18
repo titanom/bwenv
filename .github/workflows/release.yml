@@ -1,8 +1,4 @@
 on:
-  push:
-    branches:
-      - master
-  pull_request:
   workflow_dispatch:
 
 name: CI
@@ -12,34 +8,34 @@ env:
   RUSTC_WRAPPER: "sccache"
 
 jobs:
-  # check:
-  #   name: Check, Format, Lint
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #     - uses: mozilla-actions/sccache-action@v0.0.3
-  #     - uses: actions-rs/toolchain@v1
-  #       with:
-  #         profile: minimal
-  #         toolchain: stable
-  #         override: true
-  #
-  #     - name: Check
-  #       uses: actions-rs/cargo@v1
-  #       with:
-  #         command: check
-  #
-  #     - name: Format
-  #       uses: actions-rs/cargo@v1
-  #       with:
-  #         command: fmt
-  #         args: --all -- --check
-  #
-  #     - name: Lint
-  #       uses: actions-rs/cargo@v1
-  #       with:
-  #         command: clippy
-  #         args: -- -D warnings
+  check:
+    name: Check, Format, Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: mozilla-actions/sccache-action@v0.0.3
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Check
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+
+      - name: Format
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+
+      - name: Lint
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: -- -D warnings
 
   build:
     name: Build on ${{ matrix.os }} for ${{ matrix.arch }}
@@ -96,47 +92,62 @@ jobs:
           name: ${{ steps.target.outputs.target }}
           path: ./target/${{ steps.target.outputs.target }}/release/bwenv
 
-  #
-  # release:
-  #   name: Release
-  #   needs:
-  #     - build-linux
-  #     - build-apple-silicon
-  #   if: github.ref == 'refs/heads/master'
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #
-  #     - name: Download build artifacts for x86_64-unknown-linux-musl
-  #       uses: actions/download-artifact@v3
-  #       with:
-  #         name: x86_64-unknown-linux-musl
-  #         path: ./x86_64-unknown-linux-musl
-  #
-  #     - name: Download build artifacts for aarch64-apple-darwin
-  #       uses: actions/download-artifact@v3
-  #       with:
-  #         name: aarch64-apple-darwin
-  #         path: ./aarch64-apple-darwin
-  #
-  #     - name: Create archive for x86_64-unknown-linux-musl
-  #       run: zip -r -j bwenv-x86_64-unknown-linux-musl.zip x86_64-unknown-linux-musl/bwenv
-  #
-  #     - name: Create archive for aarch64-apple-darwin
-  #       run: zip -r -j bwenv-aarch64-apple-darwin.zip aarch64-apple-darwin/bwenv
-  #
-  #     - name: Read version from Cargo.toml
-  #       id: get_version
-  #       run: echo "version=$(awk -F' = ' '/^version/ {gsub(/"/, "", $2); print $2}' Cargo.toml)" >> $GITHUB_OUTPUT
-  #
-  #     - name: ls
-  #       run: ls -la
-  #
-  #     - name: Create Release
-  #       uses: softprops/action-gh-release@v1
-  #       with:
-  #         files: |
-  #           ./bwenv-x86_64-unknown-linux-musl.zip
-  #           ./bwenv-aarch64-apple-darwin.zip
-  #         tag_name: "v${{ steps.get_version.outputs.version }}"
-  #         name: "Release v${{ steps.get_version.outputs.version }}"
+
+  release:
+    name: Release
+    needs:
+      - build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Download build artifacts for x86_64-unknown-linux-gnu
+        uses: actions/download-artifact@v3
+        with:
+          name: x86_64-unknown-linux-musl
+          path: ./x86_64-unknown-linux-musl
+
+      - name: Download build artifacts for x86_64-unknown-linux-musl
+        uses: actions/download-artifact@v3
+        with:
+          name: x86_64-unknown-linux-musl
+          path: ./x86_64-unknown-linux-musl
+
+      - name: Download build artifacts for aarch64-apple-darwin
+        uses: actions/download-artifact@v3
+        with:
+          name: aarch64-apple-darwin
+          path: ./aarch64-apple-darwin
+
+      - name: Download build artifacts for x86_64-apple-darwin
+        uses: actions/download-artifact@v3
+        with:
+          name: x86_64-apple-darwin
+          path: ./x86_64-apple-darwin
+
+      - name: Create archive for x86_64-unknown-linux-grnu
+        run: zip -r -j bwenv-x86_64-unknown-linux-gnu.zip x86_64-unknown-linux-gnu/bwenv
+
+      - name: Create archive for x86_64-unknown-linux-musl
+        run: zip -r -j bwenv-x86_64-unknown-linux-musl.zip x86_64-unknown-linux-musl/bwenv
+
+      - name: Create archive for aarch64-apple-darwin
+        run: zip -r -j bwenv-aarch64-apple-darwin.zip aarch64-apple-darwin/bwenv
+
+      - name: Create archive for x86_64-apple-darwin
+        run: zip -r -j bwenv-x86_64-apple-darwin.zip x86_64-apple-darwin/bwenv
+
+      - name: Read version from Cargo.toml
+        id: get_version
+        run: echo "version=$(awk -F' = ' '/^version/ {gsub(/"/, "", $2); print $2}' Cargo.toml)" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            ./bwenv-x86_64-unknown-linux-gnu.zip
+            ./bwenv-x86_64-unknown-linux-musl.zip
+            ./bwenv-aarch64-apple-darwin.zip
+            ./bwenv-x86_64-apple-darwin.zip
+          tag_name: "v${{ steps.get_version.outputs.version }}"
+          name: "Release v${{ steps.get_version.outputs.version }}"
