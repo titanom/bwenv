@@ -44,7 +44,11 @@ async fn main() {
         max_age,
     } = config.evaluate(&cli.args).unwrap();
 
-    let cache = Cache::new(PathBuf::from(config.cache.path));
+    let config_path = PathBuf::from(config.path);
+    let root_dir = config_path.parent().unwrap();
+    let cache_dir = root_dir.join(config.cache.path);
+
+    let cache = Cache::new(cache_dir);
 
     let CacheEntry {
         variables: secrets, ..
