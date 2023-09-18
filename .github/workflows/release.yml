@@ -104,8 +104,8 @@ jobs:
       - name: Download build artifacts for x86_64-unknown-linux-gnu
         uses: actions/download-artifact@v3
         with:
-          name: x86_64-unknown-linux-musl
-          path: ./x86_64-unknown-linux-musl
+          name: x86_64-unknown-linux-gnu
+          path: ./x86_64-unknown-linux-gnu
 
       - name: Download build artifacts for x86_64-unknown-linux-musl
         uses: actions/download-artifact@v3
@@ -125,7 +125,7 @@ jobs:
           name: x86_64-apple-darwin
           path: ./x86_64-apple-darwin
 
-      - name: Create archive for x86_64-unknown-linux-grnu
+      - name: Create archive for x86_64-unknown-linux-gnu
         run: zip -r -j bwenv-x86_64-unknown-linux-gnu.zip x86_64-unknown-linux-gnu/bwenv
 
       - name: Create archive for x86_64-unknown-linux-musl
