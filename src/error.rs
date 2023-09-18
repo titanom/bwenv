@@ -1,6 +1,6 @@
 #[derive(Debug)]
 pub enum Error {
-    NoProfileInput,
+    _NoProfileInput,
     ProfileNotConfigured,
     _ProjectNotConfigured,
     _RemoteProjectNotFound,

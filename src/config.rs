@@ -49,7 +49,8 @@ impl Config {
     pub fn evaluate(&self, cli_args: &Args) -> Result<ConfigEvaluation, Error> {
         let max_age = self.cache.max_age.unwrap_or(86400);
 
-        let env_var_names = self.environment.as_ref().ok_or(Error::NoProfileInput)?;
+        let default_environment: Vec<String> = std::vec::Vec::new();
+        let env_var_names = self.environment.as_ref().unwrap_or(&default_environment);
 
         let profile_name = match cli_args.profile.clone() {
             Some(profile) => profile,
