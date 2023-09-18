@@ -6,14 +6,20 @@ pub struct Args {
     #[arg(
         short,
         long,
-        long_help = "Access token for the service account",
-        help = "Access token for the service account",
+        long_help = "access token for the service account",
+        help = "access token for the service account",
         env = "BWS_ACCESS_TOKEN",
         required = false
     )]
     pub token: String,
 
-    #[arg(short, long, long_help, env = "BWENV_PROFILE", required = false)]
+    #[arg(
+        short,
+        long = "profile for loading project configuration",
+        long_help = "profile for loading project configuration",
+        env = "BWENV_PROFILE",
+        required = false
+    )]
     pub profile: Option<String>,
 
     #[arg(last = true)]

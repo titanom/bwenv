@@ -33,27 +33,65 @@ chmod +x ~/.local/bin/bwenv
 
 ## Usage
 
+```txt
+Usage: bwenv [OPTIONS] [-- <SLOP>...]
+
+Arguments:
+  [SLOP]...
+
+Options:
+  -t, --token <TOKEN>
+          access token for the service account [env: BWS_ACCESS_TOKEN=]
+  -p, --profile for loading project configuration <PROFILE>
+          profile for loading project configuration [env: BWENV_PROFILE=]
+  -h, --help
+          Print help (see more with '--help')
+  -V, --version
+          Print version
+```
+
+### `<SLOP>`
+
+Program in which the environment variables are injected.  
+This can be any command, you would normally run in your shell, just prefixed with `bwenv [OPTIONS] --`.
+
+### `token`
+
+Access token for the service account of your project.  
+Can be configured using the env variable `BWS_ACCESS_TOKEN` or using the `--token` option.  
+Evaluation has following order:
+1. `--token` option
+2. `BWS_ACCESS_TOKEN` env variable
+
+### `profile`
+
+Profile for loading project configuration.  
+Can be configured using the env variable `BWENV_PROFILE`, one of the variables defined in the configuration file or using the `--profile` option.  
+Evaluation has following order:
+1. `--profile` option
+2. `BWENV_PROFILE` env variable
+3. variables of the `environment` configuration starting with the first
+
 ## Configuration
 
 ```toml
-# list of environment variables to specify the environment being used
-# first match applies
 environment = ["MY_ENV", "NODE_ENV"]
 
-[cache]
-# directory to store the local cache
-directory = "./node_modules/.cache"
+# default project if no profile option is provided, useful for local development
+project = "<project-id>"
 
-# mage age in seconds of the local cache
+[cache]
+# path to the cache directory
+path = "./node_modules/.cache"
+
+# max age in seconds, after which the cache is revalidated
 max_age = 3600
 
-# max seconds of stale cached values
-stale_while_revalidate = 3600
+# projects for specific profiles
+[profiles]
+[development]
+project = "<project-id>"
 
-[environments]
-# specify named environments
-[environments.development]
-project = "bws_project_id"
-alias = ["dev"]
-cache_dir = "./node_modules/.dev-cache"
+[production]
+project = "<project-id>"
 ```
