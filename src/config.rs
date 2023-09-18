@@ -35,7 +35,15 @@ pub struct ConfigEvaluation {
 impl Config {
     pub fn new() -> Self {
         let config_file_path = find_local_config().unwrap();
-        parse_config_file(&config_file_path).unwrap()
+        let mut config = parse_config_file(&config_file_path).unwrap();
+        config.profiles.insert(
+            String::from("no_profile"),
+            Profile {
+                environment: None,
+                project: config.project.to_owned(),
+            },
+        );
+        config
     }
 
     pub fn evaluate(&self, cli_args: &Args) -> Result<ConfigEvaluation, Error> {
@@ -43,21 +51,24 @@ impl Config {
 
         let env_var_names = self.environment.as_ref().ok_or(Error::NoProfileInput)?;
 
-        let profile_name = cli_args
-            .profile
-            .clone()
-            .unwrap_or_else(|| get_profile_from_env(env_var_names).expect("no profile"));
+        let profile_name = match cli_args.profile.clone() {
+            Some(profile) => profile,
+            None => get_profile_from_env(env_var_names).unwrap_or(String::from("no_profile")),
+        };
 
         let profile = self
             .profiles
             .get(&profile_name)
             .ok_or(Error::ProfileNotConfigured)?;
 
-        let project = profile.project.as_ref().unwrap_or_else(|| {
-            self.project
-                .as_ref()
-                .expect("please provide a project via environment variables or config file")
-        });
+        let project = profile
+            .project
+            .as_ref()
+            .or_else(|| {
+                log::error!("could not find project configuration");
+                std::process::exit(1);
+            })
+            .unwrap();
 
         Ok(ConfigEvaluation {
             profile_name: profile_name.to_string(),

@@ -1,5 +1,5 @@
 environment = ["MY_ENV", "NODE_ENV"]
-# project = "p0"
+project = "227f4033-fdbb-482b-847c-b06600dc8e69"
 
 [cache]
 path = "./node_modules/.cache/"
