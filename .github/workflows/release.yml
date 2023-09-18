@@ -42,9 +42,10 @@ jobs:
   #         args: -- -D warnings
 
   build:
-    name: Build on ${{ matrix.os }}
+    name: Build on ${{ matrix.os }} for ${{ matrix.arch }}
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
         arch: [x86_64, aarch64]
@@ -56,68 +57,43 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: mozilla-actions/sccache-action@v0.0.3
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-          target: ${{ matrix.arch }}-${{ startsWith(matrix.os, 'ubuntu-latest') && 'unknown-linux' || 'apple-darwin' }}${{ startsWith(matrix.os, 'ubuntu-latest') && '-${{ matrix.lib }}' || '' }}
+  
+      - name: Compute Linux Target
+        id: linux-target
+        if: startsWith(matrix.os, 'ubuntu')
+        run: echo "target=${{ matrix.arch }}-unknown-linux-${{ matrix.lib }}" >> $GITHUB_OUTPUT
 
-  # build-linux:
-  #   name: Build for x86_64-unknown-linux-musl
-  #   needs: check
-  #   if: github.ref == 'refs/heads/master'
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #     - uses: mozilla-actions/sccache-action@v0.0.3
-  #     - uses: actions-rs/toolchain@v1
-  #       with:
-  #         profile: minimal
-  #         toolchain: stable
-  #         override: true
-  #         target: x86_64-unknown-linux-musl
-  #
-  #     - run: sudo apt-get update && sudo apt install musl-tools
-  #
-  #     - name: Build for x86_64-unknown-linux-musl
-  #       uses: actions-rs/cargo@v1
-  #       with:
-  #         command: build
-  #         args: --release --target x86_64-unknown-linux-musl
-  #
-  #     - name: Store build artifact
-  #       uses: actions/upload-artifact@v3
-  #       with:
-  #         name: x86_64-unknown-linux-musl
-  #         path: ./target/x86_64-unknown-linux-musl/release/bwenv
-  #
-  # build-darwin:
-  #   name: Build Darwin
-  #   needs: check
-  #   if: github.ref == 'refs/heads/master'
-  #   runs-on: macos-latest
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #     - uses: mozilla-actions/sccache-action@v0.0.3
-  #     - uses: actions-rs/toolchain@v1
-  #       with:
-  #         profile: minimal
-  #         toolchain: stable
-  #         override: true
-  #         target: aarch64-apple-darwin
-  #
-  #     - name: Build aarch64-apple-darwin
-  #       uses: actions-rs/cargo@v1
-  #       with:
-  #         command: build
-  #         args: --release --target aarch64-apple-darwin
-  #
-  #     - name: Store build artifact
-  #       uses: actions/upload-artifact@v3
-  #       with:
-  #         name: aarch64-apple-darwin
-  #         path: ./target/aarch64-apple-darwin/release/bwenv
+      - name: Compute Apple Target
+        id: apple-target
+        if: startsWith(matrix.os, 'macos')
+        run: echo "target=${{ matrix.arch }}-apple-darwin" >> $GITHUB_OUTPUT
+
+      - name: Print Target
+        id: target
+        run: echo "target=${{ steps.linux-target.outputs.target || steps.apple-target.outputs.target }}" >> $GITHUB_OUTPUT
+
+      - name: Print Actual Target
+        run: echo "${{ steps.target.outputs.target }}"
+
+      - name: Install Rust Toolchain
+        run: rustup target add ${{ steps.target.outputs.target }}
+
+      - name: Install musl Compiler
+        if: startsWith(matrix.lib, 'musl')
+        run: sudo apt-get update && sudo apt install musl-tools
+
+      - name: Build Target ${{ steps.target.outputs.target }}
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --target ${{ steps.target.outputs.target }}
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ steps.target.outputs.target }}
+          path: ./target/${{ steps.target.outputs.target }}/release/bwenv
+
   #
   # release:
   #   name: Release
