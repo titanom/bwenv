@@ -53,6 +53,8 @@ jobs:
         exclude:
           - os: macos-latest
             lib: musl
+          - os: ubuntu-latest
+            arch: aarch64
 
     steps:
       - uses: actions/checkout@v3
