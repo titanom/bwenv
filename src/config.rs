@@ -24,6 +24,8 @@ pub struct Config {
     pub project: Option<String>,
     #[serde(flatten)]
     pub profiles: BTreeMap<String, Profile>,
+    #[serde(skip)]
+    pub path: String,
 }
 
 pub struct ConfigEvaluation {
@@ -104,7 +106,8 @@ fn parse_config_file(file_path: &PathBuf) -> Result<Config, Error> {
     let mut file = File::open(file_path).unwrap();
     file.read_to_string(&mut toml_str).unwrap();
 
-    let config: Config = toml::from_str(&toml_str).unwrap();
+    let mut config: Config = toml::from_str(&toml_str).unwrap();
+    config.path = file_path.to_str().unwrap().to_owned();
 
     Ok(config)
 }
