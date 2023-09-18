@@ -41,7 +41,7 @@ jobs:
           args: -- -D warnings
 
   build-linux:
-    name: Build for x86_64-unknown-linux-gnu
+    name: Build for x86_64-unknown-linux-musl
     needs: check
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
@@ -53,19 +53,21 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
-          target: x86_64-unknown-linux-gnu
+          target: x86_64-unknown-linux-musl
 
-      - name: Build for x86_64-unknown-linux-gnu
+      - run: sudo apt-get update && sudo apt install musl-tools
+
+      - name: Build for x86_64-unknown-linux-musl
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --release --target x86_64-unknown-linux-gnu
+          args: --release --target x86_64-unknown-linux-musl
 
       - name: Store build artifact
         uses: actions/upload-artifact@v3
         with:
-          name: x86_64-unknown-linux-gnu
-          path: ./target/x86_64-unknown-linux-gnu/release/bwenv
+          name: x86_64-unknown-linux-musl
+          path: ./target/x86_64-unknown-linux-musl/release/bwenv
 
   build-apple-silicon:
     name: Build aarch64-apple-darwin
@@ -104,11 +106,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Download build artifacts for x86_64-unknown-linux-gnu
+      - name: Download build artifacts for x86_64-unknown-linux-musl
         uses: actions/download-artifact@v3
         with:
-          name: x86_64-unknown-linux-gnu
-          path: ./x86_64-unknown-linux-gnu
+          name: x86_64-unknown-linux-musl
+          path: ./x86_64-unknown-linux-musl
 
       - name: Download build artifacts for aarch64-apple-darwin
         uses: actions/download-artifact@v3
@@ -116,8 +118,8 @@ jobs:
           name: aarch64-apple-darwin
           path: ./aarch64-apple-darwin
 
-      - name: Create archive for x86_64-unknown-linux-gnu
-        run: zip -r -j bwenv-x86_64-unknown-linux-gnu.zip x86_64-unknown-linux-gnu/bwenv
+      - name: Create archive for x86_64-unknown-linux-musl
+        run: zip -r -j bwenv-x86_64-unknown-linux-musl.zip x86_64-unknown-linux-musl/bwenv
 
       - name: Create archive for aarch64-apple-darwin
         run: zip -r -j bwenv-aarch64-apple-darwin.zip aarch64-apple-darwin/bwenv
@@ -133,7 +135,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            ./bwenv-x86_64-unknown-linux-gnu.zip
+            ./bwenv-x86_64-unknown-linux-musl.zip
             ./bwenv-aarch64-apple-darwin.zip
           tag_name: "v${{ steps.get_version.outputs.version }}"
           name: "Release v${{ steps.get_version.outputs.version }}"
