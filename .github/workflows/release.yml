@@ -61,10 +61,7 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
-          target: ${{ matrix.arch }}-${
-            { if startsWith(matrix.os, 'ubuntu') }}unknown-linux${{
-            { else if startsWith(matrix.os, 'macos') }}applw-darwin${{
-            { endif }}-${{ matrix.lib }}
+          target: ${{ matrix.arch }}-${{ startsWith(matrix.os, 'ubuntu-latest') && 'unknown-linux' || 'apple-darwin' }}${{ startsWith(matrix.os, 'ubuntu-latest') && '-${{ matrix.lib }}' || '' }}
 
   # build-linux:
   #   name: Build for x86_64-unknown-linux-musl
