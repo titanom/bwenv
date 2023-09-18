@@ -15,8 +15,9 @@ pub struct Args {
 
     #[arg(
         short,
-        long = "profile for loading project configuration",
+        long,
         long_help = "profile for loading project configuration",
+        help = "profile for loading project configuration",
         env = "BWENV_PROFILE",
         required = false
     )]

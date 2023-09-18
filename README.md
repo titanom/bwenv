@@ -1,5 +1,7 @@
 # bwenv
 
+CLI for injecting secrets from Bitwarden Secrets Manager into a process
+
 ## Installation
 
 ### Using `cargo`
@@ -40,14 +42,10 @@ Arguments:
   [SLOP]...
 
 Options:
-  -t, --token <TOKEN>
-          access token for the service account [env: BWS_ACCESS_TOKEN=]
-  -p, --profile for loading project configuration <PROFILE>
-          profile for loading project configuration [env: BWENV_PROFILE=]
-  -h, --help
-          Print help (see more with '--help')
-  -V, --version
-          Print version
+  -t, --token <TOKEN>      access token for the service account [env: BWS_ACCESS_TOKEN=]
+  -p, --profile <PROFILE>  profile for loading project configuration [env: BWENV_PROFILE=]
+  -h, --help               Print help (see more with '--help')
+  -V, --version            Print version
 ```
 
 ### `<SLOP>`
