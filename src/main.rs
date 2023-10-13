@@ -2,7 +2,7 @@ use log::Level;
 use std::{
     io::{self, Read, Write},
     path::PathBuf,
-    process::{Command, Stdio},
+    process::{self, Command, Stdio},
 };
 
 mod bitwarden;
@@ -111,8 +111,10 @@ async fn main() {
         });
 
         // Wait for the child process to finish and close the threads
-        let _ = child.wait();
+        let status = child.wait().expect("Failed to wait on child process");
         stdout_thread.join().expect("stdout thread panicked");
         stderr_thread.join().expect("stderr thread panicked");
+
+        process::exit(status.code().unwrap_or(1))
     }
 }
