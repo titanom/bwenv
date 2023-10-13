@@ -14,7 +14,7 @@ jobs:
     name: Check, Format, Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: mozilla-actions/sccache-action@v0.0.3
       - uses: actions-rs/toolchain@v1
         with:
