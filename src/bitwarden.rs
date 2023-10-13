@@ -1,6 +1,6 @@
 use bitwarden::secrets_manager::secrets::SecretIdentifiersByProjectRequest;
 use bitwarden::{
-    auth::request::AccessTokenLoginRequest,
+    auth::login::AccessTokenLoginRequest,
     client::client_settings::{ClientSettings, DeviceType},
     secrets_manager::secrets::SecretGetRequest,
     Client,

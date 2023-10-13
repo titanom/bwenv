@@ -147,9 +147,9 @@ checksum = "b4682ae6287fcf752ecaabbfcc7b6f9b72aa33933dc23a554d853aea8eea8635"
 
 [[package]]
 name = "bitwarden"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "85b7197437e36f5be8e4998d321afe81b625c318077cbc518183c44598078319"
+checksum = "03d76f4094646c2f5900bb6683afc1d6dd61cf2c0a28505b65e10db8d840c885"
 dependencies = [
  "aes",
  "argon2",
@@ -183,9 +183,9 @@ dependencies = [
 
 [[package]]
 name = "bitwarden-api-api"
-version = "0.2.1"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e955113f400f2f9d55f44fd1ef962a4034a81ea4dd2211de921f69c9bb32214"
+checksum = "b7cbf9ee5014e7f3dbb021acc1fd4d5a8717b173eec9478cefa7697b0bffa0f4"
 dependencies = [
  "reqwest",
  "serde",
@@ -198,9 +198,9 @@ dependencies = [
 
 [[package]]
 name = "bitwarden-api-identity"
-version = "0.2.1"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6ee122a44f13b5ab1b90bd81cb7e951447e8e1e3b74f6f5f22a708ab301a45cd"
+checksum = "a145f72bc2d573a9085702224cc7ee01156292fab671b1b3f95b6ca377afaa12"
 dependencies = [
  "reqwest",
  "serde",
@@ -246,7 +246,7 @@ checksum = "a3e2c3daef883ecc1b5d58c15adae93470a91d425f3532ba1695849656af3fc1"
 
 [[package]]
 name = "bwenv"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "bitwarden",
  "clap",
