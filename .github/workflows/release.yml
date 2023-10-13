@@ -1,7 +1,10 @@
 on:
+  push:
+    branches:
+      - master
   workflow_dispatch:
 
-name: CI
+name: Release
 
 env:
   SCCACHE_GHA_ENABLED: "true"
