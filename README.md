@@ -72,6 +72,10 @@ Evaluation has following order:
 
 ## Configuration
 
+The configuration file `bwenv.toml`, located in the root of your project must be used to configure profiles & caching behavior.  
+This file should be committed, don't worry about leaking project IDs - they are not secret.
+The only secret, you must *never* commit, is `BWS_ACCESS_TOKEN`, which therefore can not be configured using the config file.
+
 ```toml
 environment = ["MY_ENV", "NODE_ENV"]
 
@@ -92,4 +96,23 @@ project = "<project-id>"
 
 [production]
 project = "<project-id>"
+```
+
+## Troubleshooting
+
+### Network Issues & Bitwarden Incident
+
+If for whatevery reason, the Bitwarden API is not availably - set `cache.max_age` to a very large number like 31556926 (1 year) to make sure the cache is always read.  
+
+If it is your first time running `bwenv`, your only option is to manually retrieve the secrets from the Bitwarden Website and create the cache-file yourself.  
+
+The location of the file is `<cache-path-from-config-file>/bwenv/<profile>.toml`.  
+If you use the default project without a profile, replace `<profile>` with `no_profile`.
+```toml
+# replace this with the current UNIX timestamp
+last_revalidation = 1694986302222
+
+[variables]
+KEY = "<value>"
+OTHER_KEY = "<other-value>"
 ```
