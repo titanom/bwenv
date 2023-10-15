@@ -4,7 +4,7 @@ use std::{collections::BTreeMap, env, fs::File, io::Read, path::PathBuf};
 use crate::cli::Args;
 use crate::error::Error;
 
-type Overrides = Option<Vec<BTreeMap<String, String>>>;
+type Overrides = Option<BTreeMap<String, String>>;
 
 #[derive(Debug, Deserialize)]
 pub struct Profile {

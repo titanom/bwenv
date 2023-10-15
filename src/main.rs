@@ -67,11 +67,9 @@ async fn main() {
         final_secrets.insert(key, value);
     }
 
-    if let Some(override_list) = &overrides {
-        for override_map in override_list.iter() {
-            for (key, value) in override_map.iter() {
-                final_secrets.insert(key.clone(), value.clone());
-            }
+    if let Some(overrides) = &overrides {
+        for (key, value) in overrides {
+            final_secrets.insert(key.clone(), value.clone());
         }
     }
 

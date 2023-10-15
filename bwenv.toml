@@ -6,11 +6,10 @@ path = "./node_modules/.cache/"
 
 [profiles.development]
 project = "227f4033-fdbb-482b-847c-b06600dc8e69"
-overrides = [
-	{ FORCE_COLOR = "1" },
-	{ TEST_ENVIRONMENT_VARIABLE = "some value" },
-	{ OPENAI_API_KEY = "more values" },
-]
+[profiles.development.overrides]
+FORCE_COLOR = "1"
+TEST_ENVIRONMENT_VARIABLE = "some value"
+OPENAI_API_KEY = "more values"
 
 [profiles.production]
 project = "227f4033-fdbb-482b-847c-b06600dc8e69"
