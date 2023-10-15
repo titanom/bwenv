@@ -91,10 +91,12 @@ max_age = 3600
 
 # projects for specific profiles
 [profiles]
-[development]
+[profiles.development]
 project = "<project-id>"
+[profiles.development.overrides]
+FORCE_COLOR = "1"
 
-[production]
+[profiles.production]
 project = "<project-id>"
 ```
 
