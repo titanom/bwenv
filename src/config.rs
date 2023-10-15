@@ -4,10 +4,13 @@ use std::{collections::BTreeMap, env, fs::File, io::Read, path::PathBuf};
 use crate::cli::Args;
 use crate::error::Error;
 
+type Overrides = Option<Vec<BTreeMap<String, String>>>;
+
 #[derive(Debug, Deserialize)]
 pub struct Profile {
     pub project: Option<String>,
     pub environment: Option<String>,
+    pub overrides: Overrides,
 }
 
 #[derive(Debug, Deserialize)]
@@ -22,7 +25,6 @@ pub struct Config {
     pub environment: Option<Vec<String>>,
     pub cache: Cache,
     pub project: Option<String>,
-    #[serde(flatten)]
     pub profiles: BTreeMap<String, Profile>,
     #[serde(skip)]
     pub path: String,
@@ -32,6 +34,7 @@ pub struct ConfigEvaluation {
     pub profile_name: String,
     pub project_id: String,
     pub max_age: u64,
+    pub overrides: Overrides,
 }
 
 impl Config {
@@ -43,6 +46,7 @@ impl Config {
             Profile {
                 environment: None,
                 project: config.project.to_owned(),
+                overrides: None,
             },
         );
         config
@@ -77,6 +81,7 @@ impl Config {
             profile_name: profile_name.to_string(),
             project_id: project.to_string(),
             max_age,
+            overrides: profile.overrides.clone(),
         })
     }
 }

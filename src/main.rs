@@ -42,6 +42,7 @@ async fn main() {
         project_id,
         profile_name,
         max_age,
+        overrides,
     } = config.evaluate(&cli.args).unwrap();
 
     let config_path = PathBuf::from(config.path);
@@ -60,7 +61,21 @@ async fn main() {
         .await
         .unwrap();
 
-    let secrets = &secrets.into_iter().collect::<Vec<(String, String)>>();
+    let mut final_secrets = std::collections::HashMap::new();
+
+    for (key, value) in secrets.into_iter() {
+        final_secrets.insert(key, value);
+    }
+
+    if let Some(override_list) = &overrides {
+        for override_map in override_list.iter() {
+            for (key, value) in override_map.iter() {
+                final_secrets.insert(key.clone(), value.clone());
+            }
+        }
+    }
+
+    let secrets = final_secrets.into_iter().collect::<Vec<(String, String)>>();
 
     let mut cmd = Command::new(program);
 
