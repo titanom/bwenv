@@ -1,7 +1,6 @@
 use serde::Deserialize;
 use std::{collections::BTreeMap, env, fs::File, io::Read, path::PathBuf};
 
-use crate::cli::Args;
 use crate::error::Error;
 
 #[derive(Debug, Deserialize)]
@@ -48,13 +47,13 @@ impl Config {
         config
     }
 
-    pub fn evaluate(&self, cli_args: &Args) -> Result<ConfigEvaluation, Error> {
+    pub fn evaluate(&self, profile: Option<String>) -> Result<ConfigEvaluation, Error> {
         let max_age = self.cache.max_age.unwrap_or(86400);
 
         let default_environment: Vec<String> = std::vec::Vec::new();
         let env_var_names = self.environment.as_ref().unwrap_or(&default_environment);
 
-        let profile_name = match cli_args.profile.clone() {
+        let profile_name = match profile {
             Some(profile) => profile,
             None => get_profile_from_env(env_var_names).unwrap_or(String::from("no_profile")),
         };

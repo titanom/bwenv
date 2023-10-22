@@ -59,6 +59,11 @@ impl Cache {
         std::fs::write(cache_file_path, cache_entry).unwrap();
     }
 
+    pub fn clear(&self, profile: &str) {
+        let cache_file_path = self.get_cache_file_path(profile);
+        let _ = fs::remove_file(cache_file_path);
+    }
+
     fn is_stale(&self, profile: &str, seconds: u64) -> bool {
         let cache_entry = self.get(profile);
 
