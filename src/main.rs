@@ -1,3 +1,5 @@
+use clap::Parser;
+use cli::CacheCommand;
 use log::Level;
 use std::{
     io::{self, Read, Write},
@@ -28,8 +30,53 @@ async fn main() {
     // generate docs
     // let markdown: String = clap_markdown::help_markdown::<Args>();
     // println!("{}", markdown);
-    let cli = Cli::new();
-    let (program, program_args) = match cli.get_program() {
+    let cli = Cli::parse();
+
+    pub fn get_program(cli: &Cli) -> Option<(String, Vec<String>)> {
+        let slop = &cli.slop;
+        match &slop.get(0) {
+            Some(program) => {
+                let args = slop[1..].to_vec();
+
+                Some((program.to_string(), args))
+            }
+            None => None,
+        }
+    }
+
+    let config = Config::new();
+
+    let config_path = PathBuf::from(&config.path);
+    let root_dir = config_path.parent().unwrap();
+    let cache_dir = root_dir.join(&config.cache.path);
+
+    let cache = Cache::new(cache_dir);
+
+    match &cli.command {
+        Some(cli::Command::Cache(cache_command)) => match cache_command {
+            CacheCommand::Clear => {
+                if let Some(profile) = &cli.profile {
+                    cache.clear(&profile.clone())
+                }
+                process::exit(1);
+            }
+            CacheCommand::Invalidate => {
+                if let Some(profile) = &cli.profile {
+                    cache.invalidate(&profile.clone())
+                }
+                process::exit(1);
+            }
+        },
+        None => {}
+    }
+
+    let ConfigEvaluation {
+        project_id,
+        profile_name,
+        max_age,
+    } = config.evaluate(cli.profile.to_owned()).unwrap();
+
+    let (program, program_args) = match get_program(&cli) {
         Some(t) => t,
         None => {
             log::error!("no slop provided");
@@ -37,24 +84,11 @@ async fn main() {
         }
     };
 
-    let config = Config::new();
-    let ConfigEvaluation {
-        project_id,
-        profile_name,
-        max_age,
-    } = config.evaluate(&cli.args).unwrap();
-
-    let config_path = PathBuf::from(config.path);
-    let root_dir = config_path.parent().unwrap();
-    let cache_dir = root_dir.join(config.cache.path);
-
-    let cache = Cache::new(cache_dir);
-
     let CacheEntry {
         variables: secrets, ..
     } = cache
         .get_or_revalidate(&profile_name, max_age, move || async {
-            let mut bitwarden_client = BitwardenClient::new(cli.args.token).await;
+            let mut bitwarden_client = BitwardenClient::new(cli.token).await;
             bitwarden_client.get_secrets_by_project_id(project_id).await
         })
         .await
