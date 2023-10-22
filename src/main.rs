@@ -62,7 +62,7 @@ async fn main() {
             }
             CacheCommand::Invalidate => {
                 if let Some(profile) = &cli.profile {
-                    cache.clear(&profile.clone())
+                    cache.invalidate(&profile.clone())
                 }
                 process::exit(1);
             }

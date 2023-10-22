@@ -64,6 +64,19 @@ impl Cache {
         let _ = fs::remove_file(cache_file_path);
     }
 
+    pub fn invalidate(&self, profile: &str) {
+        if let Some(cache_entry) = self.get(profile) {
+            let cache_file_path = self.get_cache_file_path(profile);
+            fs::create_dir_all(self.directory.clone()).unwrap();
+            let cache_entry = CacheEntry {
+                last_revalidation: 0,
+                variables: cache_entry.variables,
+            };
+            let cache_entry = toml::to_string(&cache_entry).unwrap();
+            std::fs::write(cache_file_path, cache_entry).unwrap();
+        }
+    }
+
     fn is_stale(&self, profile: &str, seconds: u64) -> bool {
         let cache_entry = self.get(profile);
 
