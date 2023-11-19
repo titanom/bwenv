@@ -9,15 +9,6 @@ CLI for injecting secrets from Bitwarden Secrets Manager into a process
 cargo install --git ssh://git@github.com/titanom/bwenv-rs.git
 ```
 
-> **Note**  
-> `cargo` uses libgit2 by default, which comes with many shortcomings regarding authentication.
-> Make sure to set `net.git-fetch-with-cli = true` in your cargo config (`~/.cargo/config.toml`)
-
-```toml
-[net]
-git-fetch-with-cli = true
-```
-
 ### Manual Download
 Download the latest release from GitHub for your operating system.  
 Available targets include:
@@ -57,7 +48,7 @@ This can be any command, you would normally run in your shell, just prefixed wit
 
 Access token for the service account of your project.  
 Can be configured using the env variable `BWS_ACCESS_TOKEN` or using the `--token` option.  
-Evaluation has following order:
+Evaluation has the following order:
 1. `--token` option
 2. `BWS_ACCESS_TOKEN` env variable
 
@@ -65,7 +56,7 @@ Evaluation has following order:
 
 Profile for loading project configuration.  
 Can be configured using the env variable `BWENV_PROFILE`, one of the variables defined in the configuration file or using the `--profile` option.  
-Evaluation has following order:
+Evaluation has the following order:
 1. `--profile` option
 2. `BWENV_PROFILE` env variable
 3. variables of the `environment` configuration starting with the first
@@ -102,7 +93,7 @@ project = "<project-id>"
 
 ### Network Issues & Bitwarden Incident
 
-If for whatevery reason, the Bitwarden API is not availably - set `cache.max_age` to a very large number like 31556926 (1 year) to make sure the cache is always read.  
+If for whatever reason, the Bitwarden API is not available - set `cache.max_age` to a very large number like 31556926 (1 year) to make sure the cache is always read.  
 
 If it is your first time running `bwenv`, your only option is to manually retrieve the secrets from the Bitwarden Website and create the cache-file yourself.  
 
