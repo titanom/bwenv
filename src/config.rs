@@ -46,7 +46,7 @@ impl Config {
             Profile {
                 environment: None,
                 project: config.project.to_owned(),
-                r#override: None,
+                r#override: config.r#override.to_owned(),
             },
         );
         config
