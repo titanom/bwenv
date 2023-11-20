@@ -1,8 +1,7 @@
-use bitwarden::secrets_manager::secrets::SecretIdentifiersByProjectRequest;
+use bitwarden::secrets_manager::secrets::{SecretIdentifiersByProjectRequest, SecretsGetRequest};
 use bitwarden::{
     auth::login::AccessTokenLoginRequest,
     client::client_settings::{ClientSettings, DeviceType},
-    secrets_manager::secrets::SecretGetRequest,
     Client,
 };
 use uuid::Uuid;
@@ -59,23 +58,22 @@ impl BitwardenClient {
             .await
             .unwrap();
 
-        let mut secrets = Vec::new();
+        let secrets_get_request = SecretsGetRequest {
+            ids: secret_identifiers
+                .data
+                .into_iter()
+                .map(|ident| ident.id)
+                .collect(),
+        };
 
-        for secret_identifier in secret_identifiers.data {
-            let secret_get_request = SecretGetRequest {
-                id: secret_identifier.id,
-            };
-
-            let secret = self
-                .client
-                .secrets()
-                .get(&secret_get_request)
-                .await
-                .unwrap();
-
-            secrets.push((secret.key, secret.value));
-        }
-
-        secrets
+        self.client
+            .secrets()
+            .get_by_ids(secrets_get_request)
+            .await
+            .unwrap()
+            .data
+            .into_iter()
+            .map(|secret| (secret.key, secret.value))
+            .collect()
     }
 }

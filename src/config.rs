@@ -3,10 +3,13 @@ use std::{collections::BTreeMap, env, fs::File, io::Read, path::PathBuf};
 
 use crate::error::Error;
 
+type Override = Option<BTreeMap<String, String>>;
+
 #[derive(Debug, Deserialize)]
 pub struct Profile {
     pub project: Option<String>,
     pub environment: Option<String>,
+    pub r#override: Override,
 }
 
 #[derive(Debug, Deserialize)]
@@ -21,8 +24,8 @@ pub struct Config {
     pub environment: Option<Vec<String>>,
     pub cache: Cache,
     pub project: Option<String>,
-    #[serde(flatten)]
-    pub profiles: BTreeMap<String, Profile>,
+    pub r#override: Override,
+    pub profile: BTreeMap<String, Profile>,
     #[serde(skip)]
     pub path: String,
 }
@@ -31,17 +34,19 @@ pub struct ConfigEvaluation {
     pub profile_name: String,
     pub project_id: String,
     pub max_age: u64,
+    pub r#override: Override,
 }
 
 impl Config {
     pub fn new() -> Self {
         let config_file_path = find_local_config().unwrap();
         let mut config = parse_config_file(&config_file_path).unwrap();
-        config.profiles.insert(
+        config.profile.insert(
             String::from("no_profile"),
             Profile {
                 environment: None,
                 project: config.project.to_owned(),
+                r#override: config.r#override.to_owned(),
             },
         );
         config
@@ -59,7 +64,7 @@ impl Config {
         };
 
         let profile = self
-            .profiles
+            .profile
             .get(&profile_name)
             .ok_or(Error::ProfileNotConfigured)?;
 
@@ -76,6 +81,7 @@ impl Config {
             profile_name: profile_name.to_string(),
             project_id: project.to_string(),
             max_age,
+            r#override: profile.r#override.clone(),
         })
     }
 }
