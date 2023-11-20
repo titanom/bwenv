@@ -1,8 +1,14 @@
-use clap::Parser;
+use clap::{Parser, Subcommand};
 
-#[derive(Parser, Debug)]
+#[derive(Parser)]
 #[command(author, version, about, long_about = None)]
-pub struct Args {
+pub struct Cli {
+    #[command(subcommand)]
+    pub command: Option<Command>,
+
+    #[arg(last = true)]
+    pub slop: Vec<String>,
+
     #[arg(
         short,
         long,
@@ -22,57 +28,19 @@ pub struct Args {
         required = false
     )]
     pub profile: Option<String>,
-
-    #[arg(last = true)]
-    pub slop: Vec<String>,
-    // #[arg(
-    //     short,
-    //     long,
-    //     long_help = "Secret manager project name",
-    //     required = false
-    // )]
-    // pub project: String,
-
-    // #[arg(long, long_help = "Profile of the project", required = false)]
-    // pub profile: String,
-    //
-    // #[arg(
-    //     short,
-    //     long,
-    //     long_help = "Cache directory for the secrets",
-    //     required = false
-    // )]
-    // pub cache_dir: String,
-    //
-    // #[arg(
-    //     short,
-    //     long,
-    //     long_help = "Revalidate the cache after the giben number of seconds",
-    //     default_value_t = 3600
-    // )]
-    // pub revalidate: u64,
 }
 
-pub struct Cli {
-    pub args: Args,
+#[derive(Subcommand, Debug)]
+pub enum Command {
+    #[command(subcommand)]
+    Cache(CacheCommand),
 }
 
-impl Cli {
-    pub fn new() -> Self {
-        let args = Args::parse();
+#[derive(Subcommand, Debug)]
+pub enum CacheCommand {
+    /// clear the cache of a given profile
+    Clear,
 
-        Cli { args }
-    }
-
-    pub fn get_program(&self) -> Option<(String, Vec<String>)> {
-        let slop = &self.args.slop;
-        match &slop.get(0) {
-            Some(program) => {
-                let args = slop[1..].to_vec();
-
-                Some((program.to_string(), args))
-            }
-            None => None,
-        }
-    }
+    /// invalidate the cache of a given profile
+    Invalidate,
 }
