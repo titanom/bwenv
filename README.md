@@ -72,6 +72,8 @@ environment = ["MY_ENV", "NODE_ENV"]
 
 # default project if no profile option is provided, useful for local development
 project = "<project-id>"
+[override]
+FORCE_COLOR = "1"
 
 [cache]
 # path to the cache directory
@@ -81,13 +83,12 @@ path = "./node_modules/.cache"
 max_age = 3600
 
 # projects for specific profiles
-[profiles]
-[profiles.development]
+[profile.development]
 project = "<project-id>"
-[profiles.development.overrides]
+[profile.development.override]
 FORCE_COLOR = "1"
 
-[profiles.production]
+[profile.production]
 project = "<project-id>"
 ```
 

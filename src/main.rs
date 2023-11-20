@@ -74,7 +74,7 @@ async fn main() {
         project_id,
         profile_name,
         max_age,
-        overrides,
+        r#override,
     } = config.evaluate(cli.profile.to_owned()).unwrap();
 
     let (program, program_args) = match get_program(&cli) {
@@ -101,7 +101,7 @@ async fn main() {
         final_secrets.insert(key, value);
     }
 
-    if let Some(overrides) = &overrides {
+    if let Some(overrides) = &r#override {
         for (key, value) in overrides {
             final_secrets.insert(key.clone(), value.clone());
         }
