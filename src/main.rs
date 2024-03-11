@@ -35,7 +35,7 @@ async fn main() {
 
     pub fn get_program(cli: &Cli) -> Option<(String, Vec<String>)> {
         let slop = &cli.slop;
-        match &slop.get(0) {
+        match &slop.first() {
             Some(program) => {
                 let args = slop[1..].to_vec();
 
