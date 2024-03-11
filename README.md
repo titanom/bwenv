@@ -5,8 +5,14 @@ CLI for injecting secrets from Bitwarden Secrets Manager into a process
 ## Installation
 
 ### Using `cargo`
+Install latest version:
 ```sh
 cargo install --git ssh://git@github.com/titanom/bwenv-rs.git
+```
+
+or a specific version (e.g. v1.0.0):
+```sh
+cargo install --git ssh://git@github.com/titanom/bwenv-rs.git --rev v1.0.0
 ```
 
 ### Manual Download

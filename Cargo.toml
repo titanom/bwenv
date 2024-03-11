@@ -16,6 +16,7 @@ tokio = { version = "1.33.0", features = ["full"] }
 toml = "0.8.2"
 uuid = "1.4.1"
 openssl = { version = "0.10", features = ["vendored"] }
+semver = "1.0.22"
 
 [target.aarch64-unknown-linux-musl]
 linker = "aarch64-linux-gnu-gcc"

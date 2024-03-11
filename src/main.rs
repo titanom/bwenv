@@ -1,6 +1,7 @@
 use clap::Parser;
 use cli::CacheCommand;
 use log::Level;
+use semver::Version;
 use std::{
     io::{self, Read, Write},
     path::PathBuf,
@@ -71,11 +72,23 @@ async fn main() {
     }
 
     let ConfigEvaluation {
+        version_req,
         project_id,
         profile_name,
         max_age,
         r#override,
     } = config.evaluate(cli.profile.to_owned()).unwrap();
+
+    let version = Version::parse(env!("CARGO_PKG_VERSION")).unwrap();
+
+    if !version_req.matches(&version) {
+        log::error!(
+            "Version {} does not meet the requirement {}",
+            version,
+            version_req
+        );
+        std::process::exit(1);
+    }
 
     let (program, program_args) = match get_program(&cli) {
         Some(t) => t,

@@ -1,3 +1,4 @@
+use semver::VersionReq;
 use serde::Deserialize;
 use std::{collections::BTreeMap, env, fs::File, io::Read, path::PathBuf};
 
@@ -21,6 +22,7 @@ pub struct Cache {
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
+    pub version: String,
     pub environment: Option<Vec<String>>,
     pub cache: Cache,
     pub project: Option<String>,
@@ -31,6 +33,7 @@ pub struct Config {
 }
 
 pub struct ConfigEvaluation {
+    pub version_req: VersionReq,
     pub profile_name: String,
     pub project_id: String,
     pub max_age: u64,
@@ -77,7 +80,10 @@ impl Config {
             })
             .unwrap();
 
+        let version = VersionReq::parse(&self.version).unwrap();
+
         Ok(ConfigEvaluation {
+            version_req: version,
             profile_name: profile_name.to_string(),
             project_id: project.to_string(),
             max_age,
