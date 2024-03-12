@@ -4,18 +4,18 @@ cache:
   path: node_modules/.cache
 
 global:
-  override-values:
+  overrides:
     FORCE_COLOR: 1
+    OPENAI_API_KEYS: default overrides
 
 profiles:
   default:
     project-id: 227f4033-fdbb-482b-847c-b06600dc8e69
+    overrides:
+      OPENAI_API_KEYS: profile overrides
 
   development:
     project-id: 227f4033-fdbb-482b-847c-b06600dc8e69
-    override-values:
-      TEST_ENVIRONMENT_VARIABLE: some value
-      OPENAI_API_KEY: more values
 
   production:
     project-id: 227f4033-fdbb-482b-847c-b06600dc8e69

@@ -1,10 +1,12 @@
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, fs, future::Future, path::PathBuf, time::SystemTime};
 
+use crate::config_yaml::Secrets;
+
 #[derive(Debug, Serialize, Deserialize)]
-pub struct CacheEntry {
+pub struct CacheEntry<'a> {
     last_revalidation: u64,
-    pub variables: BTreeMap<String, String>,
+    pub variables: Secrets<'a>,
 }
 
 pub struct Cache {
@@ -53,7 +55,12 @@ impl Cache {
                 .duration_since(SystemTime::UNIX_EPOCH)
                 .expect("SystemTime before UNIX EPOCH!")
                 .as_millis() as u64,
-            variables: vars.iter().cloned().collect(),
+            variables: Secrets(
+                vars.iter()
+                    .into_iter()
+                    .map(|(key, value)| (key.into(), value.into()))
+                    .collect(),
+            ),
         };
         let cache_entry = toml::to_string(&cache_entry).unwrap();
         std::fs::write(cache_file_path, cache_entry).unwrap();

@@ -2,6 +2,7 @@ use format_serde_error::{ErrorTypes, SerdeError};
 use semver::VersionReq;
 use serde::{Deserialize, Serialize};
 use std::{
+    borrow::Cow,
     collections::HashMap,
     fs::File,
     io::{BufReader, Read},
@@ -50,50 +51,81 @@ pub struct Cache {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct OverrideValues(HashMap<String, String>);
+pub struct Secrets<'a>(pub HashMap<Cow<'a, str>, Cow<'a, str>>);
 
-impl Default for OverrideValues {
+impl<'a> Default for Secrets<'a> {
     fn default() -> Self {
-        OverrideValues(HashMap::new())
+        Secrets(HashMap::new())
+    }
+}
+
+impl<'a> Secrets<'a> {
+    pub fn new() -> Self {
+        Secrets(HashMap::new())
+    }
+
+    pub fn merge(a: &'a Secrets<'a>, b: &'a Secrets<'a>) -> Secrets<'a> {
+        let mut merged = HashMap::new();
+
+        for (key, value) in &a.0 {
+            merged.insert(Cow::Borrowed(key.as_ref()), Cow::Borrowed(value.as_ref()));
+        }
+
+        for (key, value) in &b.0 {
+            merged.insert(Cow::Borrowed(key.as_ref()), Cow::Borrowed(value.as_ref()));
+        }
+
+        Secrets(merged)
+    }
+
+    pub fn as_hash_map(&mut self) -> &HashMap<Cow<'a, str>, Cow<'a, str>> {
+        &self.0
+    }
+
+    pub fn as_vec(&mut self) -> Vec<(String, String)> {
+        self.as_hash_map()
+            .into_iter()
+            .map(|(key, value)| (key.to_string(), value.to_string()))
+            .collect()
     }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Global {
-    #[serde(default, rename = "override-values")]
-    override_values: OverrideValues,
+struct Global<'a> {
+    #[serde(default, rename = "overrides")]
+    overrides: Secrets<'a>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Profile {
+struct Profile<'a> {
     #[serde(rename = "project-id")]
     project_id: String,
-    #[serde(default, rename = "override-values")]
-    override_values: OverrideValues,
+    #[serde(default, rename = "overrides")]
+    overrides: Secrets<'a>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Profiles(HashMap<String, Profile>);
+struct Profiles<'a>(HashMap<String, Profile<'a>>);
 
-impl Default for Profiles {
+impl<'a> Default for Profiles<'a> {
     fn default() -> Self {
         Profiles(HashMap::new())
     }
 }
 
-impl Profiles {
+impl<'a> Profiles<'a> {
     pub fn get(&self, key: &str) -> Result<&Profile, ConfigError> {
         self.0.get(key).ok_or(ConfigError::NoProfile)
     }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Config {
+pub struct Config<'a> {
     version: String,
     // TODO: make private
     pub cache: Cache,
-    global: Option<Global>,
-    profiles: Profiles,
+    global: Option<Global<'a>>,
+    profiles: Profiles<'a>,
     #[serde(skip)]
     pub path: String,
 }
@@ -104,28 +136,65 @@ pub struct ConfigEvaluation<'a> {
     pub profile_name: &'a str,
     pub project_id: &'a str,
     pub max_age: &'a CacheMaxAge,
+    pub overrides: Secrets<'a>,
 }
 
-impl Config {
+impl<'a> Config<'a> {
     pub fn new<P: AsRef<Path>>(config_file_path: P) -> Result<Self, anyhow::Error> {
         parse_config_file(config_file_path)
     }
 
-    pub fn evaluate<'a>(
-        &'a self,
-        profile_name: &'a str,
-    ) -> Result<ConfigEvaluation<'a>, ConfigError> {
+    pub fn evaluate<'b>(
+        &'b self,
+        profile_name: &'b str,
+    ) -> Result<ConfigEvaluation<'b>, ConfigError> {
         let profile = self.profiles.get(profile_name)?;
 
         let version = VersionReq::parse(&self.version).unwrap();
 
+        let global_overrides = &self.global.as_ref().unwrap().overrides;
+        let profile_overrides = &profile.overrides;
+
+        let overrides = Secrets::merge(global_overrides, profile_overrides);
+
         Ok(ConfigEvaluation {
             profile_name,
+            overrides,
             project_id: &profile.project_id,
             version_req: version,
             max_age: &self.cache.max_age,
         })
     }
+}
+
+fn convert_hashmap<'a>(
+    input: HashMap<&'a String, &'a String>,
+) -> HashMap<Cow<'a, str>, Cow<'a, str>> {
+    input
+        .into_iter()
+        .map(|(k, v)| (Cow::Borrowed(k.as_str()), Cow::Borrowed(v.as_str())))
+        .collect()
+}
+
+fn merge_hashmaps<'a, K, V>(
+    map1: &'a HashMap<K, V>,
+    map2: &'a HashMap<K, V>,
+) -> HashMap<&'a K, &'a V>
+where
+    K: Eq + std::hash::Hash + 'a,
+    V: 'a,
+{
+    let mut merged = HashMap::new();
+
+    for (key, value) in map1 {
+        merged.insert(key, value);
+    }
+
+    for (key, value) in map2 {
+        merged.insert(key, value);
+    }
+
+    merged
 }
 
 pub fn find_local_config() -> Result<PathBuf, ConfigError> {
@@ -136,7 +205,7 @@ pub fn find_local_config() -> Result<PathBuf, ConfigError> {
         .ok_or(ConfigError::NotFound)
 }
 
-fn parse_config_file<P: AsRef<Path>>(file_path: P) -> Result<Config, anyhow::Error> {
+fn parse_config_file<'a, P: AsRef<Path>>(file_path: P) -> Result<Config<'a>, anyhow::Error> {
     let mut raw = String::new();
     let mut file = File::open(file_path)
         .map_err(|_| ConfigError::Read)

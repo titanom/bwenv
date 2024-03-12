@@ -4,6 +4,8 @@ use cli::CacheCommand;
 use log::Level;
 use semver::Version;
 use std::{
+    borrow::Cow,
+    collections::HashMap,
     io::{self, Read, Write},
     path::PathBuf,
     process::{self, Command, Stdio},
@@ -19,7 +21,7 @@ mod fs;
 
 use cache::CacheEntry;
 
-use crate::{bitwarden::BitwardenClient, cli::Cli};
+use crate::{bitwarden::BitwardenClient, cli::Cli, config_yaml::Secrets};
 use crate::{cache::Cache, config_yaml::find_local_config};
 
 use crate::config_yaml::{Config, ConfigEvaluation};
@@ -54,6 +56,7 @@ async fn main() -> anyhow::Result<()> {
         version_req,
         max_age,
         project_id,
+        mut overrides,
         ..
     } = config.evaluate(&profile_name).unwrap();
 
@@ -90,9 +93,7 @@ async fn main() -> anyhow::Result<()> {
         }
     };
 
-    let CacheEntry {
-        variables: secrets, ..
-    } = cache
+    let CacheEntry { variables, .. } = cache
         .get_or_revalidate(&profile_name, max_age.as_u64(), move || {
             let project_id = project_id.clone();
             async move {
@@ -105,23 +106,14 @@ async fn main() -> anyhow::Result<()> {
         .await
         .unwrap();
 
-    let mut final_secrets = std::collections::HashMap::new();
-
-    for (key, value) in secrets.into_iter() {
-        final_secrets.insert(key, value);
-    }
-
-    let secrets = final_secrets.into_iter().collect::<Vec<(String, String)>>();
+    let mut secrets = Secrets::merge(&variables, &overrides);
 
     let mut cmd = Command::new(program);
-
+    cmd.envs(secrets.as_vec());
     cmd.args(program_args);
-
     cmd.stdin(Stdio::inherit())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
-
-    cmd.envs(secrets.to_owned());
 
     if let Ok(mut child) = cmd.spawn() {
         let mut stdout = child.stdout.take().unwrap();
