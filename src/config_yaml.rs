@@ -73,22 +73,18 @@ impl<'a> Secrets<'a> {
         Secrets(HashMap::new())
     }
 
-    pub fn merge(a: &'a Secrets<'a>, b: &'a Secrets<'a>) -> Secrets<'a> {
-        let mut merged = HashMap::new();
-
-        for (key, value) in &a.0 {
-            merged.insert(Cow::Borrowed(key.as_ref()), Cow::Borrowed(value.as_ref()));
-        }
-
-        for (key, value) in &b.0 {
-            merged.insert(Cow::Borrowed(key.as_ref()), Cow::Borrowed(value.as_ref()));
-        }
-
-        Secrets(merged)
+    pub fn as_hash_map(&self) -> &HashMap<Cow<'a, str>, Cow<'a, str>> {
+        &self.0
     }
 
-    pub fn as_hash_map(&mut self) -> &HashMap<Cow<'a, str>, Cow<'a, str>> {
-        &self.0
+    pub fn merge(a: &'a Secrets<'a>, b: &'a Secrets<'a>) -> Secrets<'a> {
+        Secrets(
+            a.as_hash_map()
+                .iter()
+                .chain(b.as_hash_map().iter())
+                .map(|(k, v)| (Cow::Borrowed(k.as_ref()), Cow::Borrowed(v.as_ref())))
+                .collect(),
+        )
     }
 
     pub fn as_vec(&mut self) -> Vec<(String, String)> {
@@ -182,36 +178,6 @@ impl<'a> Config<'a> {
             max_age: &self.cache.max_age,
         })
     }
-}
-
-fn convert_hashmap<'a>(
-    input: HashMap<&'a String, &'a String>,
-) -> HashMap<Cow<'a, str>, Cow<'a, str>> {
-    input
-        .into_iter()
-        .map(|(k, v)| (Cow::Borrowed(k.as_str()), Cow::Borrowed(v.as_str())))
-        .collect()
-}
-
-fn merge_hashmaps<'a, K, V>(
-    map1: &'a HashMap<K, V>,
-    map2: &'a HashMap<K, V>,
-) -> HashMap<&'a K, &'a V>
-where
-    K: Eq + std::hash::Hash + 'a,
-    V: 'a,
-{
-    let mut merged = HashMap::new();
-
-    for (key, value) in map1 {
-        merged.insert(key, value);
-    }
-
-    for (key, value) in map2 {
-        merged.insert(key, value);
-    }
-
-    merged
 }
 
 pub fn find_local_config() -> Result<PathBuf, ConfigError> {
