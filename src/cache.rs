@@ -28,7 +28,7 @@ impl Cache {
     pub async fn get_or_revalidate<RevalidateFn, ReturnValue>(
         &self,
         profile: &str,
-        max_age: u64,
+        max_age: &u64,
         revalidate: RevalidateFn,
     ) -> Option<CacheEntry>
     where
@@ -77,7 +77,7 @@ impl Cache {
         }
     }
 
-    fn is_stale(&self, profile: &str, seconds: u64) -> bool {
+    fn is_stale(&self, profile: &str, seconds: &u64) -> bool {
         let cache_entry = self.get(profile);
 
         match cache_entry {
@@ -99,7 +99,7 @@ impl Cache {
     // }
 }
 
-fn is_date_older_than_n_seconds(unix_millis: u64, n_seconds: u64) -> bool {
+fn is_date_older_than_n_seconds(unix_millis: u64, n_seconds: &u64) -> bool {
     let date_seconds = unix_millis / 1000;
 
     let current_time = SystemTime::now()

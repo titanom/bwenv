@@ -1,3 +1,4 @@
+#![allow(warnings)]
 use clap::Parser;
 use cli::CacheCommand;
 use log::Level;
@@ -18,18 +19,16 @@ mod fs;
 
 use cache::CacheEntry;
 // use cli::Args;
-use config::ConfigEvaluation;
 
-use crate::cache::Cache;
-use crate::config::Config;
 use crate::{bitwarden::BitwardenClient, cli::Cli};
+use crate::{cache::Cache, config_yaml::find_local_config};
 
-use crate::config_yaml::Config;
+use crate::config_yaml::{Config, ConfigEvaluation};
 
 // use clap_markdown;
 
 #[tokio::main(flavor = "current_thread")]
-async fn main() {
+async fn main() -> anyhow::Result<()> {
     let _ = simple_logger::init_with_level(Level::Error);
 
     // generate docs
@@ -49,39 +48,36 @@ async fn main() {
         }
     }
 
-    let config = Config::new();
+    let config_path = find_local_config().unwrap();
+    let config = Config::new(&config_path).unwrap();
 
-    let config_path = PathBuf::from(&config.path);
     let root_dir = config_path.parent().unwrap();
-    let cache_dir = root_dir.join(&config.cache.path);
+    let cache_dir = root_dir.join(config.cache.path.as_pathbuf());
 
     let cache = Cache::new(cache_dir);
+
+    let profile_name = cli.profile.clone().unwrap_or(String::from("default"));
+
+    let ConfigEvaluation {
+        version_req,
+        max_age,
+        project_id,
+        ..
+    } = config.evaluate(&profile_name).unwrap();
 
     match &cli.command {
         Some(cli::Command::Cache(cache_command)) => match cache_command {
             CacheCommand::Clear => {
-                if let Some(profile) = &cli.profile {
-                    cache.clear(&profile.clone())
-                }
-                process::exit(1);
+                cache.clear(&profile_name);
+                process::exit(0);
             }
             CacheCommand::Invalidate => {
-                if let Some(profile) = &cli.profile {
-                    cache.invalidate(&profile.clone())
-                }
-                process::exit(1);
+                cache.invalidate(&profile_name);
+                process::exit(0);
             }
         },
         None => {}
     }
-
-    let ConfigEvaluation {
-        version_req,
-        project_id,
-        profile_name,
-        max_age,
-        r#override,
-    } = config.evaluate(cli.profile.to_owned()).unwrap();
 
     let version = Version::parse(env!("CARGO_PKG_VERSION")).unwrap();
 
@@ -105,9 +101,14 @@ async fn main() {
     let CacheEntry {
         variables: secrets, ..
     } = cache
-        .get_or_revalidate(&profile_name, max_age, move || async {
-            let mut bitwarden_client = BitwardenClient::new(cli.token).await;
-            bitwarden_client.get_secrets_by_project_id(project_id).await
+        .get_or_revalidate(&profile_name, max_age.into(), move || {
+            let project_id = project_id.clone();
+            async move {
+                let mut bitwarden_client = BitwardenClient::new(cli.token).await;
+                bitwarden_client
+                    .get_secrets_by_project_id(&project_id)
+                    .await
+            }
         })
         .await
         .unwrap();
@@ -116,12 +117,6 @@ async fn main() {
 
     for (key, value) in secrets.into_iter() {
         final_secrets.insert(key, value);
-    }
-
-    if let Some(overrides) = &r#override {
-        for (key, value) in overrides {
-            final_secrets.insert(key.clone(), value.clone());
-        }
     }
 
     let secrets = final_secrets.into_iter().collect::<Vec<(String, String)>>();
@@ -181,4 +176,6 @@ async fn main() {
 
         process::exit(status.code().unwrap_or(1))
     }
+
+    Ok(())
 }

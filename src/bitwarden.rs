@@ -46,9 +46,12 @@ impl BitwardenClient {
         }
     }
 
-    pub async fn get_secrets_by_project_id(&mut self, project_id: String) -> Vec<(String, String)> {
+    pub async fn get_secrets_by_project_id<T: AsRef<str>>(
+        &mut self,
+        project_id: T,
+    ) -> Vec<(String, String)> {
         let secrets_by_project_request = SecretIdentifiersByProjectRequest {
-            project_id: Uuid::parse_str(&project_id).unwrap(),
+            project_id: Uuid::parse_str(project_id.as_ref()).unwrap(),
         };
 
         let secret_identifiers = self
