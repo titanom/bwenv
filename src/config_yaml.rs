@@ -1,6 +1,6 @@
 use format_serde_error::{ErrorTypes, SerdeError};
 use semver::VersionReq;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::{
     borrow::Cow,
     collections::HashMap,
@@ -10,6 +10,15 @@ use std::{
 };
 
 use crate::{error::ConfigError, fs::find_up};
+
+fn deserialize_null_default<'de, D, T>(deserializer: D) -> Result<T, D::Error>
+where
+    T: Default + Deserialize<'de>,
+    D: Deserializer<'de>,
+{
+    let opt = Option::deserialize(deserializer)?;
+    Ok(opt.unwrap_or_default())
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CacheMaxAge(u64);
@@ -92,7 +101,11 @@ impl<'a> Secrets<'a> {
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Global<'a> {
-    #[serde(default, rename = "overrides")]
+    #[serde(
+        default,
+        rename = "overrides",
+        deserialize_with = "deserialize_null_default"
+    )]
     overrides: Secrets<'a>,
 }
 
@@ -100,7 +113,11 @@ struct Global<'a> {
 struct Profile<'a> {
     #[serde(rename = "project-id")]
     project_id: String,
-    #[serde(default, rename = "overrides")]
+    #[serde(
+        default,
+        rename = "overrides",
+        deserialize_with = "deserialize_null_default"
+    )]
     overrides: Secrets<'a>,
 }
 

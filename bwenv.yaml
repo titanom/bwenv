@@ -12,7 +12,7 @@ profiles:
   default:
     project-id: 227f4033-fdbb-482b-847c-b06600dc8e69
     overrides:
-      OPENAI_API_KEYS: profile overrides
+      # OPENAI_API_KEYS: profile overrides
 
   development:
     project-id: 227f4033-fdbb-482b-847c-b06600dc8e69
