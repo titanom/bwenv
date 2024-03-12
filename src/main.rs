@@ -18,22 +18,14 @@ mod error;
 mod fs;
 
 use cache::CacheEntry;
-// use cli::Args;
 
 use crate::{bitwarden::BitwardenClient, cli::Cli};
 use crate::{cache::Cache, config_yaml::find_local_config};
 
 use crate::config_yaml::{Config, ConfigEvaluation};
 
-// use clap_markdown;
-
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> anyhow::Result<()> {
-    let _ = simple_logger::init_with_level(Level::Error);
-
-    // generate docs
-    // let markdown: String = clap_markdown::help_markdown::<Args>();
-    // println!("{}", markdown);
     let cli = Cli::parse();
 
     pub fn get_program(cli: &Cli) -> Option<(String, Vec<String>)> {
@@ -101,7 +93,7 @@ async fn main() -> anyhow::Result<()> {
     let CacheEntry {
         variables: secrets, ..
     } = cache
-        .get_or_revalidate(&profile_name, max_age.into(), move || {
+        .get_or_revalidate(&profile_name, max_age.as_u64(), move || {
             let project_id = project_id.clone();
             async move {
                 let mut bitwarden_client = BitwardenClient::new(cli.token).await;
