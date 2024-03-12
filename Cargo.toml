@@ -17,6 +17,7 @@ toml = "0.8.2"
 uuid = "1.4.1"
 openssl = { version = "0.10", features = ["vendored"] }
 semver = "1.0.22"
+serde_yaml = "0.9.32"
 
 [target.aarch64-unknown-linux-musl]
 linker = "aarch64-linux-gnu-gcc"

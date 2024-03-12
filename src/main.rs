@@ -12,7 +12,9 @@ mod bitwarden;
 mod cache;
 mod cli;
 mod config;
+mod config_yaml;
 mod error;
+mod fs;
 
 use cache::CacheEntry;
 // use cli::Args;
@@ -21,6 +23,8 @@ use config::ConfigEvaluation;
 use crate::cache::Cache;
 use crate::config::Config;
 use crate::{bitwarden::BitwardenClient, cli::Cli};
+
+use crate::config_yaml::Config;
 
 // use clap_markdown;
 
