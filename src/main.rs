@@ -14,7 +14,7 @@ use std::{
 mod bitwarden;
 mod cache;
 mod cli;
-mod config;
+mod config_toml;
 mod config_yaml;
 mod error;
 mod fs;
@@ -23,8 +23,6 @@ use cache::CacheEntry;
 
 use crate::{bitwarden::BitwardenClient, cli::Cli, config_yaml::Secrets};
 use crate::{cache::Cache, config_yaml::find_local_config};
-
-use crate::config_yaml::{Config, ConfigEvaluation};
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> anyhow::Result<()> {
@@ -42,8 +40,15 @@ async fn main() -> anyhow::Result<()> {
         }
     }
 
-    let config_path = find_local_config().unwrap();
-    let config = Config::new(&config_path).unwrap();
+    let local_config = find_local_config().unwrap();
+
+    let config_path = local_config.as_pathbuf();
+
+    let config = match local_config {
+        config_yaml::LocalConfig::Yaml(_) => config_yaml::Config::new(&config_path),
+        config_yaml::LocalConfig::Toml(_) => config_yaml::Config::new(&config_path),
+    }?;
+
 
     let root_dir = config_path.parent().unwrap();
     let cache_dir = root_dir.join(config.cache.path.as_pathbuf());
@@ -52,7 +57,7 @@ async fn main() -> anyhow::Result<()> {
 
     let profile_name = cli.profile.clone().unwrap_or(String::from("default"));
 
-    let ConfigEvaluation {
+    let config_yaml::ConfigEvaluation {
         version_req,
         max_age,
         project_id,

@@ -180,12 +180,35 @@ impl<'a> Config<'a> {
     }
 }
 
-pub fn find_local_config() -> Result<PathBuf, ConfigError> {
-    ["bwenv.yaml", "bwenv.yml"]
-        .iter()
-        .filter_map(|filename| find_up(filename, None))
-        .next()
-        .ok_or(ConfigError::NotFound)
+pub enum LocalConfig {
+    Yaml(PathBuf),
+    Toml(PathBuf)
+}
+
+impl LocalConfig {
+    pub fn as_pathbuf(&self) -> &PathBuf {
+        match self {
+            Self::Yaml(path) => path,
+            Self::Toml(path) => path
+        }
+    }
+}
+
+pub fn find_local_config() -> anyhow::Result<LocalConfig, ConfigError> {
+    let yaml_config = ["bwenv.yaml", "bwenv.yml"].iter()
+        .find_map(|filename| find_up(filename, None));
+    
+    if let Some(path) = yaml_config {
+        return Ok(LocalConfig::Yaml(path));
+    }
+
+    let toml_config = find_up("bwenv.toml", None);
+
+    if let Some(path) = toml_config {
+        return Ok(LocalConfig::Toml(path));
+    }
+
+    Err(ConfigError::NotFound)
 }
 
 fn parse_config_file<'a, P: AsRef<Path>>(file_path: P) -> Result<Config<'a>, anyhow::Error> {
