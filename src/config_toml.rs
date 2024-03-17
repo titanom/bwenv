@@ -1,94 +1,92 @@
+use anyhow::anyhow;
+use format_serde_error::{ErrorTypes, SerdeError};
 use semver::VersionReq;
 use serde::Deserialize;
-use std::{collections::BTreeMap, env, fs::File, io::Read, path::PathBuf};
+use std::{
+    collections::BTreeMap,
+    env,
+    fs::File,
+    io::Read,
+    path::{Path, PathBuf},
+};
 
-use crate::error::Error;
+use crate::config_yaml;
+
+use crate::error::{ConfigError, Error};
 
 type Override = Option<BTreeMap<String, String>>;
 
 #[derive(Debug, Deserialize)]
-pub struct Profile {
+pub struct Profile<'a> {
     pub project: Option<String>,
     pub environment: Option<String>,
-    pub r#override: Override,
+    #[serde(default)]
+    pub r#override: config_yaml::Secrets<'a>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct Cache {
-    pub max_age: Option<u64>,
-    // stale_while_revalidate: Option<u64>,
-    pub path: String,
+    #[serde(default)]
+    pub max_age: config_yaml::CacheMaxAge,
+    pub path: config_yaml::CachePath,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct Config {
+pub struct Config<'a> {
     pub version: String,
     pub environment: Option<Vec<String>>,
     pub cache: Cache,
     pub project: Option<String>,
-    pub r#override: Override,
-    pub profile: BTreeMap<String, Profile>,
+    pub r#override: config_yaml::Secrets<'a>,
+    pub profile: BTreeMap<String, Profile<'a>>,
     #[serde(skip)]
     pub path: String,
 }
 
-pub struct ConfigEvaluation {
+pub struct ConfigEvaluation<'a> {
     pub version_req: VersionReq,
     pub profile_name: String,
     pub project_id: String,
-    pub max_age: u64,
-    pub r#override: Override,
+    pub max_age: config_yaml::CacheMaxAge,
+    pub r#override: config_yaml::Secrets<'a>,
 }
 
-impl Config {
-    pub fn new() -> Self {
-        let config_file_path = find_local_config().unwrap();
-        let mut config = parse_config_file(&config_file_path).unwrap();
+impl Config<'_> {
+    pub fn new<P: AsRef<Path>>(config_file_path: P) -> anyhow::Result<Self> {
+        if config_file_path
+            .as_ref()
+            .extension()
+            .and_then(std::ffi::OsStr::to_str)
+            != Some("toml")
+        {
+            return Err(anyhow!("Configuration file must be a .toml file"));
+        }
+
+        let mut config = parse_config_file(config_file_path)?;
         config.profile.insert(
             String::from("no_profile"),
             Profile {
                 environment: None,
-                project: config.project.to_owned(),
-                r#override: config.r#override.to_owned(),
+                project: config.project.clone(),
+                r#override: config.r#override.clone(),
             },
         );
-        config
+        Ok(config)
     }
 
-    pub fn evaluate(&self, profile: Option<String>) -> Result<ConfigEvaluation, Error> {
-        let max_age = self.cache.max_age.unwrap_or(86400);
-
-        let default_environment: Vec<String> = std::vec::Vec::new();
-        let env_var_names = self.environment.as_ref().unwrap_or(&default_environment);
-
-        let profile_name = match profile {
-            Some(profile) => profile,
-            None => get_profile_from_env(env_var_names).unwrap_or(String::from("no_profile")),
-        };
-
-        let profile = self
-            .profile
-            .get(&profile_name)
-            .ok_or(Error::ProfileNotConfigured)?;
-
-        let project = profile
-            .project
-            .as_ref()
-            .or_else(|| {
-                log::error!("could not find project configuration");
-                std::process::exit(1);
-            })
-            .unwrap();
-
-        let version = VersionReq::parse(&self.version).unwrap();
-
-        Ok(ConfigEvaluation {
-            version_req: version,
-            profile_name: profile_name.to_string(),
-            project_id: project.to_string(),
-            max_age,
-            r#override: profile.r#override.clone(),
-        })
+    pub fn as_yaml_config<'a>(&'a self) -> crate::config_yaml::Config<'_> {
+        crate::config_yaml::Config::<'a> {
+            version: self.version.clone(),
+            path: self.path.clone(),
+            global: Some(config_yaml::Global {
+                overrides: self.r#override.clone(),
+            }),
+            profiles: config_yaml::Profiles::default(),
+            cache: config_yaml::Cache {
+                path: config_yaml::CachePath(self.cache.path.as_pathbuf().clone()),
+                max_age: config_yaml::CacheMaxAge(self.cache.max_age.as_u64().clone()),
+            },
+        }
     }
 }
 
@@ -112,15 +110,15 @@ fn find_up(filename: &str, max_parents: Option<i32>) -> Option<PathBuf> {
     None
 }
 
-fn parse_config_file(file_path: &PathBuf) -> Result<Config, Error> {
-    let mut toml_str = String::new();
-    let mut file = File::open(file_path).unwrap();
-    file.read_to_string(&mut toml_str).unwrap();
+fn parse_config_file<'a, P: AsRef<Path>>(file_path: P) -> Result<Config<'a>, anyhow::Error> {
+    let mut raw = String::new();
+    let mut file = File::open(file_path)
+        .map_err(|_| ConfigError::Read)
+        .unwrap();
+    file.read_to_string(&mut raw);
 
-    let mut config: Config = toml::from_str(&toml_str).unwrap();
-    config.path = file_path.to_str().unwrap().to_owned();
-
-    Ok(config)
+    Ok(toml::from_str::<Config>(&raw)
+        .map_err(|err| SerdeError::new(raw.to_string(), ErrorTypes::Toml(err)))?)
 }
 
 fn find_local_config() -> Option<PathBuf> {

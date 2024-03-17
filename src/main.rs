@@ -14,6 +14,7 @@ use std::{
 mod bitwarden;
 mod cache;
 mod cli;
+mod config;
 mod config_toml;
 mod config_yaml;
 mod error;
@@ -21,11 +22,35 @@ mod fs;
 
 use cache::CacheEntry;
 
+use crate::cache::Cache;
 use crate::{bitwarden::BitwardenClient, cli::Cli, config_yaml::Secrets};
-use crate::{cache::Cache, config_yaml::find_local_config};
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> anyhow::Result<()> {
+    let local_config = config::find_local_config().unwrap();
+
+    let config_path = local_config.as_pathbuf();
+
+    match local_config {
+        config::LocalConfig::Yaml(_) => {
+            let config = config_yaml::Config::new(&config_path).unwrap();
+            do_the_thing(config_path, config).await
+       }
+        config::LocalConfig::Toml(_) => {
+            let toml_config = config_toml::Config::new(&config_path).unwrap();
+            let asd = toml_config.as_yaml_config();
+            do_the_thing(config_path, asd).await
+        }
+    }?;
+
+    Ok(())
+}
+
+async fn do_the_thing<'a>(
+    config_path: &PathBuf,
+    config: config_yaml::Config<'a>,
+) -> anyhow::Result<()> {
+
     let cli = Cli::parse();
 
     pub fn get_program(cli: &Cli) -> Option<(String, Vec<String>)> {
@@ -39,15 +64,6 @@ async fn main() -> anyhow::Result<()> {
             None => None,
         }
     }
-
-    let local_config = find_local_config().unwrap();
-
-    let config_path = local_config.as_pathbuf();
-
-    let config = match local_config {
-        config_yaml::LocalConfig::Yaml(_) => config_yaml::Config::new(&config_path),
-        config_yaml::LocalConfig::Toml(_) => config_yaml::Config::new(&config_path),
-    }?;
 
 
     let root_dir = config_path.parent().unwrap();
@@ -88,6 +104,7 @@ async fn main() -> anyhow::Result<()> {
             version_req
         );
         std::process::exit(1);
+
     }
 
     let (program, program_args) = match get_program(&cli) {

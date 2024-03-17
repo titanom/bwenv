@@ -21,7 +21,7 @@ where
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct CacheMaxAge(u64);
+pub struct CacheMaxAge(pub u64);
 
 impl Default for CacheMaxAge {
     fn default() -> Self {
@@ -36,7 +36,7 @@ impl CacheMaxAge {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct CachePath(PathBuf);
+pub struct CachePath(pub PathBuf);
 
 impl Default for CachePath {
     fn default() -> Self {
@@ -56,10 +56,10 @@ pub struct Cache {
     #[serde(default)]
     pub path: CachePath,
     #[serde(default, rename = "max-age")]
-    max_age: CacheMaxAge,
+    pub max_age: CacheMaxAge,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Secrets<'a>(pub HashMap<Cow<'a, str>, Cow<'a, str>>);
 
 impl<'a> Default for Secrets<'a> {
@@ -96,29 +96,29 @@ impl<'a> Secrets<'a> {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Global<'a> {
+pub struct Global<'a> {
     #[serde(
         default,
         rename = "overrides",
         deserialize_with = "deserialize_null_default"
     )]
-    overrides: Secrets<'a>,
+    pub overrides: Secrets<'a>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Profile<'a> {
+pub struct Profile<'a> {
     #[serde(rename = "project-id")]
-    project_id: String,
+    pub project_id: String,
     #[serde(
         default,
         rename = "overrides",
         deserialize_with = "deserialize_null_default"
     )]
-    overrides: Secrets<'a>,
+    pub overrides: Secrets<'a>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Profiles<'a>(HashMap<String, Profile<'a>>);
+pub struct Profiles<'a>(HashMap<String, Profile<'a>>);
 
 impl<'a> Default for Profiles<'a> {
     fn default() -> Self {
@@ -133,12 +133,12 @@ impl<'a> Profiles<'a> {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+// TODO: make fields private
 pub struct Config<'a> {
-    version: String,
-    // TODO: make private
+    pub version: String,
     pub cache: Cache,
-    global: Option<Global<'a>>,
-    profiles: Profiles<'a>,
+    pub global: Option<Global<'a>>,
+    pub profiles: Profiles<'a>,
     #[serde(skip)]
     pub path: String,
 }
@@ -178,37 +178,6 @@ impl<'a> Config<'a> {
             max_age: &self.cache.max_age,
         })
     }
-}
-
-pub enum LocalConfig {
-    Yaml(PathBuf),
-    Toml(PathBuf)
-}
-
-impl LocalConfig {
-    pub fn as_pathbuf(&self) -> &PathBuf {
-        match self {
-            Self::Yaml(path) => path,
-            Self::Toml(path) => path
-        }
-    }
-}
-
-pub fn find_local_config() -> anyhow::Result<LocalConfig, ConfigError> {
-    let yaml_config = ["bwenv.yaml", "bwenv.yml"].iter()
-        .find_map(|filename| find_up(filename, None));
-    
-    if let Some(path) = yaml_config {
-        return Ok(LocalConfig::Yaml(path));
-    }
-
-    let toml_config = find_up("bwenv.toml", None);
-
-    if let Some(path) = toml_config {
-        return Ok(LocalConfig::Toml(path));
-    }
-
-    Err(ConfigError::NotFound)
 }
 
 fn parse_config_file<'a, P: AsRef<Path>>(file_path: P) -> Result<Config<'a>, anyhow::Error> {

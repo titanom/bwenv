@@ -13,12 +13,12 @@ simple_logger = { version = "4.2.0", default-features = false, features = [
 	"colors",
 ] }
 tokio = { version = "1.33.0", features = ["full"] }
-toml = "0.8.2"
+toml = "0.5"
 uuid = "1.4.1"
 openssl = { version = "0.10", features = ["vendored"] }
 semver = "1.0.22"
 serde_yaml = "0.8.26"
-format_serde_error = { version = "0.3.0" }
+format_serde_error = { git = "https://github.com/AlexanderThaller/format_serde_error.git", branch = "main" }
 anyhow = "1.0.81"
 
 [target.aarch64-unknown-linux-musl]
