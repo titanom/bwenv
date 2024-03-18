@@ -26,7 +26,7 @@ use crate::cache::Cache;
 use crate::{bitwarden::BitwardenClient, cli::Cli, config_yaml::Secrets};
 
 #[tokio::main(flavor = "current_thread")]
-async fn main() -> bool {
+async fn main() {
     let cli = Cli::parse();
 
     tracing_subscriber::registry()
