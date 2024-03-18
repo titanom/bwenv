@@ -20,6 +20,7 @@ tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 inquire = "0.7.2"
 tabular = "0.2.0"
+colored = "2.1.0"
 
 [target.aarch64-unknown-linux-musl]
 linker = "aarch64-linux-gnu-gcc"

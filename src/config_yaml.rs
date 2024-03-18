@@ -1,3 +1,4 @@
+use colored::Colorize;
 use format_serde_error::{ErrorTypes, SerdeError};
 use semver::VersionReq;
 use serde::{Deserialize, Deserializer, Serialize};
@@ -91,9 +92,9 @@ impl<'a> Secrets<'a> {
         let map = self.as_hash_map();
         for (key, value) in map.iter() {
             table.add_row(Row::new().with_cell(key).with_cell(if reveal {
-                value
+                value.normal()
             } else {
-                "**redacted**"
+                "**redacted**".italic().dimmed()
             }));
         }
         table.to_string()
