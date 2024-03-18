@@ -44,7 +44,7 @@ mod tests {
     use tempfile::tempdir;
 
     // Helper function to write a dummy config file
-    fn create_config_file(dir: &PathBuf, filename: &str) {
+    fn create_config_file(dir: &Path, filename: &str) {
         let file_path = dir.join(filename);
         let mut file = File::create(file_path).expect("Failed to create test config file.");
         writeln!(file, "name: TestConfig").expect("Failed to write to test config file.");
@@ -55,7 +55,7 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         create_config_file(&temp_dir.path().to_path_buf(), "bwenv.yaml");
 
-        let result = find_local_config(Some(&temp_dir.path()));
+        let result = find_local_config(Some(temp_dir.path()));
         assert!(result.is_ok());
         let config = result.unwrap();
         assert!(matches!(config, LocalConfig::Yaml(_)));
@@ -78,7 +78,7 @@ mod tests {
     fn config_not_found_returns_error() {
         let temp_dir = tempdir().unwrap();
 
-        let result = find_local_config(Some(&temp_dir.path()));
+        let result = find_local_config(Some(temp_dir.path()));
         assert!(result.is_err());
         let error = result.unwrap_err();
         assert!(matches!(error, ConfigError::NotFound));

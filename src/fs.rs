@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
 pub fn find_up(filename: &str, max_parents: Option<i32>, cwd: Option<&Path>) -> Option<PathBuf> {
-    let mut current_directory = cwd.clone()?;
+    let mut current_directory = cwd?;
 
     for _ in 0..max_parents.unwrap_or(10) {
         let file_path = current_directory.join(filename);
@@ -36,7 +36,7 @@ mod tests {
         writeln!(file, "This is a test file.").unwrap();
 
         assert_eq!(
-            find_up("testfile.txt", None, Some(&temp_dir.path())),
+            find_up("testfile.txt", None, Some(temp_dir.path())),
             Some(file_path)
         );
     }
@@ -75,7 +75,7 @@ mod tests {
         fs::create_dir_all(&level3_dir).unwrap();
 
         let file_path = temp_dir.path().join("testfile.txt");
-        let mut file = File::create(&file_path).unwrap();
+        let mut file = File::create(file_path).unwrap();
         writeln!(file, "This is a test file.").unwrap();
 
         assert_eq!(find_up("testfile.txt", Some(1), Some(&level3_dir)), None);
