@@ -24,9 +24,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Check
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
+        run: cargo check
 
   format:
     name: Format
@@ -38,10 +36,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Format
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
+        run: cargo fmt --all --check
 
   lint:
     name: Lint
@@ -53,9 +48,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Lint
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
+        run: cargo clippy
 
   test:
     name: Test
@@ -67,6 +60,4 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
+        run: cargo test

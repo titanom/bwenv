@@ -21,25 +21,16 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Check
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
+        run: cargo check
 
       - name: Format
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
+        run: cargo fmt --all --check
 
       - name: Lint
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
+        run: cargo clippy
 
       - name: Test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
+        run: cargo test
 
   build:
     name: Build on ${{ matrix.os }} for ${{ matrix.arch }}
@@ -86,10 +77,7 @@ jobs:
         run: sudo apt-get update && sudo apt install musl-tools
 
       - name: Build Target ${{ steps.target.outputs.target }}
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release --target ${{ steps.target.outputs.target }}
+        run: cargo build --release --target ${{ steps.target.outputs.target }}
 
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v3
