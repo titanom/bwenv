@@ -1,7 +1,6 @@
 #![allow(warnings)]
 use clap::Parser;
 use cli::CacheCommand;
-use log::Level;
 use semver::Version;
 use std::{
     borrow::Cow,
@@ -10,6 +9,9 @@ use std::{
     path::PathBuf,
     process::{self, Command, Stdio},
 };
+
+use tracing::{error, info, span, warn, Level};
+use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
 mod bitwarden;
 mod cache;
@@ -27,7 +29,20 @@ use crate::{bitwarden::BitwardenClient, cli::Cli, config_yaml::Secrets};
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> anyhow::Result<()> {
-    let _ = simple_logger::init_with_level(Level::Warn);
+    let cli = Cli::parse();
+
+    tracing_subscriber::registry()
+        .with(EnvFilter::new(cli.log_level.as_tracing_env()))
+        .with(
+            fmt::layer()
+                .fmt_fields(fmt::format::PrettyFields::new())
+                .event_format(fmt::format().compact().without_time().with_target(false))
+                .with_writer(std::io::stdout),
+        )
+        .init();
+
+    let root_span = span!(Level::INFO, env!("CARGO_PKG_NAME"));
+    let _guard = root_span.enter();
 
     let local_config = config::find_local_config().unwrap();
 
@@ -36,13 +51,13 @@ async fn main() -> anyhow::Result<()> {
     match local_config {
         config::LocalConfig::Yaml(_) => {
             let config = config_yaml::Config::new(&config_path).unwrap();
-            run_with(config_path, config).await
+            run_with(cli, config_path, config).await
         }
         config::LocalConfig::Toml(_) => {
             let toml_config = config_toml::Config::new(&config_path).unwrap();
             let config = toml_config.as_yaml_config();
-            log::warn!("bwenv.toml is deprecated. Please migrate to bwenv.yaml");
-            run_with(config_path, config).await
+            warn!("bwenv.toml is deprecated. Please migrate to bwenv.yaml");
+            run_with(cli, config_path, config).await
         }
     }?;
 
@@ -50,11 +65,10 @@ async fn main() -> anyhow::Result<()> {
 }
 
 async fn run_with<'a>(
+    cli: Cli,
     config_path: &PathBuf,
     config: config_yaml::Config<'a>,
 ) -> anyhow::Result<()> {
-    let cli = Cli::parse();
-
     pub fn get_program(cli: &Cli) -> Option<(String, Vec<String>)> {
         let slop = &cli.slop;
         match &slop.first() {
@@ -99,10 +113,9 @@ async fn run_with<'a>(
     }
 
     if !version_req.matches(&version) {
-        log::error!(
+        error!(
             "Version {} does not meet the requirement {}",
-            version,
-            version_req
+            version, version_req
         );
         std::process::exit(1);
     }
@@ -110,7 +123,7 @@ async fn run_with<'a>(
     let (program, program_args) = match get_program(&cli) {
         Some(t) => t,
         None => {
-            log::error!("no slop provided");
+            error!("no slop provided");
             std::process::exit(1)
         }
     };

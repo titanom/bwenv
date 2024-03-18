@@ -1,4 +1,4 @@
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -28,6 +28,37 @@ pub struct Cli {
         required = false
     )]
     pub profile: Option<String>,
+
+    #[arg(
+        short,
+        long,
+        value_enum,
+        default_value_t = LogLevel::Info,
+        help = "Set the log level",
+        env = "BWENV_LOG_LEVEL"
+    )]
+    pub log_level: LogLevel,
+}
+
+#[derive(ValueEnum, Clone, Debug)]
+pub enum LogLevel {
+    Error,
+    Warn,
+    Info,
+    Debug,
+    Trace,
+}
+
+impl LogLevel {
+    pub fn as_tracing_env(&self) -> String {
+        match self {
+            LogLevel::Error => "error".to_string(),
+            LogLevel::Warn => "warn".to_string(),
+            LogLevel::Info => "info".to_string(),
+            LogLevel::Debug => "debug".to_string(),
+            LogLevel::Trace => "trace".to_string(),
+        }
+    }
 }
 
 #[derive(Subcommand, Debug)]
