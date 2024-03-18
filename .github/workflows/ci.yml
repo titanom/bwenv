@@ -20,11 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: mozilla-actions/sccache-action@v0.0.3
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
+      - uses: dtolnay/rust-toolchain@stable
 
       - name: Check
         uses: actions-rs/cargo@v1
@@ -37,11 +33,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: mozilla-actions/sccache-action@v0.0.3
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
+      - uses: dtolnay/rust-toolchain@stable
 
       - name: Format
         uses: actions-rs/cargo@v1
@@ -55,11 +47,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: mozilla-actions/sccache-action@v0.0.3
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
+      - uses: dtolnay/rust-toolchain@stable
 
       - name: Lint
         uses: actions-rs/cargo@v1
@@ -72,11 +60,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: mozilla-actions/sccache-action@v0.0.3
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
+      - uses: dtolnay/rust-toolchain@stable
 
       - name: Test
         uses: actions-rs/cargo@v1
