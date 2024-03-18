@@ -84,7 +84,10 @@ async fn run_with<'a>(
     let root_dir = config_path.parent().unwrap();
     let cache_dir = root_dir.join(config.cache.path.as_pathbuf());
 
-    let profile_name = cli.profile.clone().unwrap_or(String::from("default"));
+    let profile_name = cli.profile.clone().unwrap_or_else(|| {
+        info!(message = "No profile specified, falling back to default profile");
+        String::from("default")
+    });
 
     let config_yaml::ConfigEvaluation {
         version_req,
@@ -92,7 +95,15 @@ async fn run_with<'a>(
         project_id,
         mut overrides,
         ..
-    } = config.evaluate(&profile_name).unwrap();
+    } = config.evaluate(&profile_name).unwrap_or_else(|_| {
+        error!(
+            message = format!(
+                "Could not find configuration for profile {:?}",
+                profile_name
+            )
+        );
+        process::exit(1)
+    });
 
     let version = Version::parse(env!("CARGO_PKG_VERSION")).unwrap();
 
