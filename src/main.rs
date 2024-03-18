@@ -3,7 +3,7 @@ use cli::CacheCommand;
 use semver::Version;
 use std::{
     io::{self, Read, Write},
-    path::PathBuf,
+    path::Path,
     process::{self, Command, Stdio},
 };
 
@@ -47,11 +47,11 @@ async fn main() -> anyhow::Result<()> {
 
     match local_config {
         config::LocalConfig::Yaml(_) => {
-            let config = config_yaml::Config::new(&config_path).unwrap();
+            let config = config_yaml::Config::new(config_path).unwrap();
             run_with(cli, config_path, config).await
         }
         config::LocalConfig::Toml(_) => {
-            let toml_config = config_toml::Config::new(&config_path).unwrap();
+            let toml_config = config_toml::Config::new(config_path).unwrap();
             let config = toml_config.as_yaml_config();
             warn!("bwenv.toml is deprecated. Please migrate to bwenv.yaml");
             run_with(cli, config_path, config).await
@@ -63,7 +63,7 @@ async fn main() -> anyhow::Result<()> {
 
 async fn run_with<'a>(
     cli: Cli,
-    config_path: &PathBuf,
+    config_path: &Path,
     config: config_yaml::Config<'a>,
 ) -> anyhow::Result<()> {
     pub fn get_program(cli: &Cli) -> Option<(String, Vec<String>)> {

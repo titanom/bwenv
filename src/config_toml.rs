@@ -35,7 +35,7 @@ pub struct Config<'a> {
     pub path: String,
 }
 
-fn convert_toml_profile_to_yaml_profile<'a>(toml_profile: Profile<'a>) -> config_yaml::Profile<'a> {
+fn convert_toml_profile_to_yaml_profile(toml_profile: Profile<'_>) -> config_yaml::Profile<'_> {
     config_yaml::Profile {
         project_id: toml_profile.project.unwrap(),
         overrides: toml_profile.r#override,
@@ -83,7 +83,7 @@ impl Config<'_> {
             ),
             cache: config_yaml::Cache {
                 path: config_yaml::CachePath(self.cache.path.as_pathbuf().clone()),
-                max_age: config_yaml::CacheMaxAge(self.cache.max_age.as_u64().clone()),
+                max_age: config_yaml::CacheMaxAge(*self.cache.max_age.as_u64()),
             },
         }
     }

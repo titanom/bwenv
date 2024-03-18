@@ -62,13 +62,10 @@ pub struct Cache {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Default)]
 pub struct Secrets<'a>(pub HashMap<Cow<'a, str>, Cow<'a, str>>);
 
-impl<'a> Default for Secrets<'a> {
-    fn default() -> Self {
-        Secrets(HashMap::new())
-    }
-}
+
 
 impl<'a> Secrets<'a> {
     pub fn as_hash_map(&self) -> &HashMap<Cow<'a, str>, Cow<'a, str>> {
@@ -87,7 +84,7 @@ impl<'a> Secrets<'a> {
 
     pub fn as_vec(&mut self) -> Vec<(String, String)> {
         self.as_hash_map()
-            .into_iter()
+            .iter()
             .map(|(key, value)| (key.to_string(), value.to_string()))
             .collect()
     }
@@ -95,7 +92,7 @@ impl<'a> Secrets<'a> {
     pub fn table(&self, reveal: bool) -> String {
         let mut table = Table::new("{:>} :: {:<}");
         let map = self.as_hash_map();
-        for (key, value) in map.into_iter() {
+        for (key, value) in map.iter() {
             table.add_row(Row::new().with_cell(key).with_cell(if reveal {
                 value
             } else {
@@ -131,13 +128,10 @@ pub struct Profile<'a> {
 type ProfilesMap<'a> = HashMap<String, Profile<'a>>;
 
 #[derive(Debug, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct Profiles<'a>(ProfilesMap<'a>);
 
-impl<'a> Default for Profiles<'a> {
-    fn default() -> Self {
-        Profiles(HashMap::new())
-    }
-}
+
 
 impl<'a> Profiles<'a> {
     pub fn new(hash_map: ProfilesMap<'a>) -> Self {

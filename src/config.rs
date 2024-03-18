@@ -1,6 +1,6 @@
 use crate::error::ConfigError;
 use crate::fs::find_up;
-use anyhow;
+
 use std::path::PathBuf;
 
 pub enum LocalConfig {

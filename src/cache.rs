@@ -88,7 +88,6 @@ impl<'a> Cache<'a> {
             version: self.version.clone(),
             variables: Secrets(
                 vars.iter()
-                    .into_iter()
                     .map(|(key, value)| (key.into(), value.into()))
                     .collect(),
             ),
