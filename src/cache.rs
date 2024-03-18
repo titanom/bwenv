@@ -1,3 +1,4 @@
+use crate::time::is_date_older_than_n_seconds;
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use std::{fs, future::Future, path::PathBuf, time::SystemTime};
@@ -133,16 +134,4 @@ impl<'a> Cache<'a> {
         cache_file_path.set_extension("yaml");
         cache_file_path
     }
-}
-
-fn is_date_older_than_n_seconds(unix_millis: u64, n_seconds: &u64) -> bool {
-    let date_seconds = unix_millis / 1000;
-
-    let current_time = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .expect("SystemTime before UNIX EPOCH!");
-
-    let threshold_time = current_time.as_secs() - n_seconds;
-
-    date_seconds < threshold_time
 }

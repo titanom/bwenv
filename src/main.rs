@@ -18,6 +18,7 @@ mod config_toml;
 mod config_yaml;
 mod error;
 mod fs;
+mod time;
 
 use cache::CacheEntry;
 
@@ -41,7 +42,7 @@ async fn main() -> anyhow::Result<()> {
     let root_span = span!(Level::INFO, env!("CARGO_PKG_NAME"));
     let _guard = root_span.enter();
 
-    let local_config = config::find_local_config().unwrap();
+    let local_config = config::find_local_config(Some(&std::env::current_dir().unwrap())).unwrap();
 
     let config_path = local_config.as_pathbuf();
 

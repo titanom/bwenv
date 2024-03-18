@@ -1,18 +1,17 @@
-use std::{env, path::PathBuf};
+use std::path::{Path, PathBuf};
 
-pub fn find_up(filename: &str, max_parents: Option<i32>) -> Option<PathBuf> {
-    let current_dir = env::current_dir().ok()?;
-    let mut current_path = current_dir.as_path();
+pub fn find_up(filename: &str, max_parents: Option<i32>, cwd: Option<&Path>) -> Option<PathBuf> {
+    let mut current_directory = cwd.clone()?;
 
     for _ in 0..max_parents.unwrap_or(10) {
-        let file_path = current_path.join(filename);
+        let file_path = current_directory.join(filename);
 
         if file_path.exists() {
             return Some(file_path);
         }
 
-        match current_path.parent() {
-            Some(parent) => current_path = parent,
+        match current_directory.parent() {
+            Some(parent) => current_directory = parent,
             None => break,
         }
     }
@@ -36,9 +35,10 @@ mod tests {
         let mut file = File::create(&file_path).unwrap();
         writeln!(file, "This is a test file.").unwrap();
 
-        std::env::set_current_dir(&temp_dir.path()).unwrap();
-
-        assert_eq!(find_up("testfile.txt", None), Some(file_path));
+        assert_eq!(
+            find_up("testfile.txt", None, Some(&temp_dir.path())),
+            Some(file_path)
+        );
     }
 
     #[test]
@@ -50,9 +50,10 @@ mod tests {
         let file_path = temp_dir.path().join("testfile.txt");
         File::create(&file_path).unwrap();
 
-        std::env::set_current_dir(&child_dir).unwrap();
-
-        assert_eq!(find_up("testfile.txt", None), Some(file_path));
+        assert_eq!(
+            find_up("testfile.txt", None, Some(&child_dir)),
+            Some(file_path)
+        );
     }
 
     #[test]
@@ -61,9 +62,7 @@ mod tests {
         let child_dir = temp_dir.path().join("child");
         fs::create_dir(&child_dir).unwrap();
 
-        std::env::set_current_dir(&child_dir).unwrap();
-
-        assert_eq!(find_up("nonexistent.txt", None), None);
+        assert_eq!(find_up("nonexistent.txt", None, Some(&child_dir)), None);
     }
 
     #[test]
@@ -79,9 +78,7 @@ mod tests {
         let mut file = File::create(&file_path).unwrap();
         writeln!(file, "This is a test file.").unwrap();
 
-        std::env::set_current_dir(&level3_dir).unwrap();
-
-        assert_eq!(find_up("testfile.txt", Some(1)), None);
+        assert_eq!(find_up("testfile.txt", Some(1), Some(&level3_dir)), None);
 
         std::env::set_current_dir(Path::new("/")).unwrap();
     }

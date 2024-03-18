@@ -1,7 +1,7 @@
 use crate::error::ConfigError;
 use crate::fs::find_up;
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug)]
 pub enum LocalConfig {
@@ -18,16 +18,16 @@ impl LocalConfig {
     }
 }
 
-pub fn find_local_config() -> anyhow::Result<LocalConfig, ConfigError> {
+pub fn find_local_config(cwd: Option<&Path>) -> anyhow::Result<LocalConfig, ConfigError> {
     let yaml_config = ["bwenv.yaml", "bwenv.yml"]
         .iter()
-        .find_map(|filename| find_up(filename, None));
+        .find_map(|filename| find_up(filename, None, cwd));
 
     if let Some(path) = yaml_config {
         return Ok(LocalConfig::Yaml(path));
     }
 
-    let toml_config = find_up("bwenv.toml", None);
+    let toml_config = find_up("bwenv.toml", None, cwd);
 
     if let Some(path) = toml_config {
         return Ok(LocalConfig::Toml(path));
@@ -39,7 +39,6 @@ pub fn find_local_config() -> anyhow::Result<LocalConfig, ConfigError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::env;
     use std::fs::File;
     use std::io::Write;
     use tempfile::tempdir;
@@ -56,15 +55,10 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         create_config_file(&temp_dir.path().to_path_buf(), "bwenv.yaml");
 
-        let original_dir = env::current_dir().unwrap();
-        env::set_current_dir(temp_dir.path()).unwrap();
-
-        let result = find_local_config();
+        let result = find_local_config(Some(&temp_dir.path()));
         assert!(result.is_ok());
         let config = result.unwrap();
         assert!(matches!(config, LocalConfig::Yaml(_)));
-
-        env::set_current_dir(original_dir).unwrap();
     }
 
     #[test]
@@ -74,29 +68,19 @@ mod tests {
         std::fs::create_dir(&child_dir).unwrap();
         create_config_file(&temp_dir.path().to_path_buf(), "bwenv.toml");
 
-        let original_dir = env::current_dir().unwrap();
-        env::set_current_dir(&child_dir).unwrap();
-
-        let result = find_local_config();
+        let result = find_local_config(Some(&child_dir));
         assert!(result.is_ok());
         let config = result.unwrap();
         assert!(matches!(config, LocalConfig::Toml(_)));
-
-        env::set_current_dir(original_dir).unwrap();
     }
 
     #[test]
     fn config_not_found_returns_error() {
         let temp_dir = tempdir().unwrap();
 
-        let original_dir = env::current_dir().unwrap();
-        env::set_current_dir(temp_dir.path()).unwrap();
-
-        let result = find_local_config();
+        let result = find_local_config(Some(&temp_dir.path()));
         assert!(result.is_err());
         let error = result.unwrap_err();
         assert!(matches!(error, ConfigError::NotFound));
-
-        env::set_current_dir(original_dir).unwrap();
     }
 }
