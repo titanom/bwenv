@@ -61,11 +61,8 @@ pub struct Cache {
     pub max_age: CacheMaxAge,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[derive(Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct Secrets<'a>(pub HashMap<Cow<'a, str>, Cow<'a, str>>);
-
-
 
 impl<'a> Secrets<'a> {
     pub fn as_hash_map(&self) -> &HashMap<Cow<'a, str>, Cow<'a, str>> {
@@ -127,11 +124,8 @@ pub struct Profile<'a> {
 
 type ProfilesMap<'a> = HashMap<String, Profile<'a>>;
 
-#[derive(Debug, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct Profiles<'a>(ProfilesMap<'a>);
-
-
 
 impl<'a> Profiles<'a> {
     pub fn new(hash_map: ProfilesMap<'a>) -> Self {
