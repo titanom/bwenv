@@ -26,7 +26,7 @@ use crate::cache::Cache;
 use crate::{bitwarden::BitwardenClient, cli::Cli, config_yaml::Secrets};
 
 #[tokio::main(flavor = "current_thread")]
-async fn main() -> anyhow::Result<()> {
+async fn main() {
     let cli = Cli::parse();
 
     tracing_subscriber::registry()
@@ -46,7 +46,7 @@ async fn main() -> anyhow::Result<()> {
 
     let config_path = local_config.as_pathbuf();
 
-    match local_config {
+    let _ = match local_config {
         config::LocalConfig::Yaml(_) => {
             let config = config_yaml::Config::new(config_path).unwrap();
             run_with(cli, config_path, config).await
@@ -57,16 +57,10 @@ async fn main() -> anyhow::Result<()> {
             warn!("bwenv.toml is deprecated. Please migrate to bwenv.yaml");
             run_with(cli, config_path, config).await
         }
-    }?;
-
-    Ok(())
+    };
 }
 
-async fn run_with<'a>(
-    cli: Cli,
-    config_path: &Path,
-    config: config_yaml::Config<'a>,
-) -> anyhow::Result<()> {
+async fn run_with<'a>(cli: Cli, config_path: &Path, config: config_yaml::Config<'a>) {
     pub fn get_program(cli: &Cli) -> Option<(String, Vec<String>)> {
         let slop = &cli.slop;
         match &slop.first() {
@@ -218,6 +212,4 @@ async fn run_with<'a>(
 
         process::exit(status.code().unwrap_or(1))
     }
-
-    Ok(())
 }
