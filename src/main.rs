@@ -69,8 +69,6 @@ async fn do_the_thing<'a>(
     let root_dir = config_path.parent().unwrap();
     let cache_dir = root_dir.join(config.cache.path.as_pathbuf());
 
-    let cache = Cache::new(cache_dir);
-
     let profile_name = cli.profile.clone().unwrap_or(String::from("default"));
 
     let config_yaml::ConfigEvaluation {
@@ -80,6 +78,10 @@ async fn do_the_thing<'a>(
         mut overrides,
         ..
     } = config.evaluate(&profile_name).unwrap();
+
+    let version = Version::parse(env!("CARGO_PKG_VERSION")).unwrap();
+
+    let cache = Cache::new(cache_dir, &version);
 
     match &cli.command {
         Some(cli::Command::Cache(cache_command)) => match cache_command {
@@ -94,8 +96,6 @@ async fn do_the_thing<'a>(
         },
         None => {}
     }
-
-    let version = Version::parse(env!("CARGO_PKG_VERSION")).unwrap();
 
     if !version_req.matches(&version) {
         log::error!(

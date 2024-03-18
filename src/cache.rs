@@ -1,29 +1,54 @@
+use semver::Version;
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, fs, future::Future, path::PathBuf, time::SystemTime};
 
 use crate::config_yaml::Secrets;
 
+mod version_serde {
+    use semver::Version;
+    use serde::{self, Deserialize, Deserializer, Serializer};
+
+    pub fn serialize<S>(version: &Version, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&version.to_string())
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Version, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        s.parse::<Version>().map_err(serde::de::Error::custom)
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CacheEntry<'a> {
     last_revalidation: u64,
     pub variables: Secrets<'a>,
+    #[serde(with = "version_serde")]
+    pub version: Version,
 }
 
-pub struct Cache {
+pub struct Cache<'a> {
     pub directory: PathBuf,
+    version: &'a Version,
 }
 
-impl Cache {
-    pub fn new(directory: PathBuf) -> Self {
-        Self {
+impl<'a> Cache<'a> {
+    pub fn new(directory: PathBuf, version: &'a Version) -> Self {
+        Cache::<'a> {
             directory: directory.join("bwenv"),
+            version,
         }
     }
 
     pub fn get(&self, profile: &str) -> Option<CacheEntry> {
         let cache_file_path = self.get_cache_file_path(profile);
         let cache_entry = std::fs::read_to_string(cache_file_path).ok()?;
-        let cache_entry: CacheEntry = toml::from_str(&cache_entry).ok()?;
+        let cache_entry: CacheEntry = serde_yaml::from_str(&cache_entry).ok()?;
         Some(cache_entry)
     }
 
@@ -55,6 +80,7 @@ impl Cache {
                 .duration_since(SystemTime::UNIX_EPOCH)
                 .expect("SystemTime before UNIX EPOCH!")
                 .as_millis() as u64,
+            version: self.version.clone(),
             variables: Secrets(
                 vars.iter()
                     .into_iter()
@@ -62,7 +88,7 @@ impl Cache {
                     .collect(),
             ),
         };
-        let cache_entry = toml::to_string(&cache_entry).unwrap();
+        let cache_entry = serde_yaml::to_string(&cache_entry).unwrap();
         std::fs::write(cache_file_path, cache_entry).unwrap();
     }
 
@@ -77,33 +103,30 @@ impl Cache {
             fs::create_dir_all(self.directory.clone()).unwrap();
             let cache_entry = CacheEntry {
                 last_revalidation: 0,
+                version: self.version.clone(),
                 variables: cache_entry.variables,
             };
-            let cache_entry = toml::to_string(&cache_entry).unwrap();
+            let cache_entry = serde_yaml::to_string(&cache_entry).unwrap();
             std::fs::write(cache_file_path, cache_entry).unwrap();
         }
     }
 
     fn is_stale(&self, profile: &str, seconds: &u64) -> bool {
         let cache_entry = self.get(profile);
-
-        match cache_entry {
+        match &cache_entry {
             None => true,
             Some(cache_entry) => {
                 is_date_older_than_n_seconds(cache_entry.last_revalidation, seconds)
+                    || self.version != &cache_entry.version
             }
         }
     }
 
     fn get_cache_file_path(&self, profile: &str) -> PathBuf {
         let mut cache_file_path = self.directory.join(profile);
-        cache_file_path.set_extension("toml");
+        cache_file_path.set_extension("yaml");
         cache_file_path
     }
-
-    // pub fn revalidate(&self, profile: &str) -> () {
-    //     let cache_entry = self.get(profile).unwrap();
-    // }
 }
 
 fn is_date_older_than_n_seconds(unix_millis: u64, n_seconds: &u64) -> bool {
