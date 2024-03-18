@@ -142,9 +142,8 @@ async fn run_with<'a>(
 
     let mut secrets = Secrets::merge(&variables, &overrides);
 
-    match &cli.command {
-        Some(cli::Command::Inspect(inspect_args)) => {
-            let reveal = if inspect_args.reveal {
+    if let Some(cli::Command::Inspect(inspect_args)) = &cli.command {
+        let reveal = if inspect_args.reveal {
                 inquire::Confirm::new("reveal secrets in output")
                     .with_default(false)
                     .with_help_message("Enabling this option will display sensitive information in plain text. Use with caution, especially in shared or public environments.")
@@ -154,11 +153,8 @@ async fn run_with<'a>(
             }
             .unwrap();
 
-            print!("{}", &secrets.table(reveal));
-            process::exit(1);
-        }
-        None => {}
-        Some(_) => {}
+        print!("{}", &secrets.table(reveal));
+        process::exit(1);
     }
 
     let (program, program_args) = match get_program(&cli) {

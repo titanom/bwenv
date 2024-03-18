@@ -12,8 +12,8 @@ pub struct Cli {
     #[arg(
         short,
         long,
-        long_help = "access token for the service account",
-        help = "access token for the service account",
+        long_help = "Access token for the service account",
+        help = "Access token for the service account",
         env = "BWS_ACCESS_TOKEN",
         required = false,
         hide_env_values = true
@@ -23,8 +23,8 @@ pub struct Cli {
     #[arg(
         short,
         long,
-        long_help = "profile for loading project configuration",
-        help = "profile for loading project configuration",
+        long_help = "Profile for loading project configuration",
+        help = "Profile for loading project configuration",
         env = "BWENV_PROFILE",
         required = false
     )]
@@ -66,8 +66,10 @@ impl LogLevel {
 #[derive(Subcommand, Debug)]
 pub enum Command {
     #[command(subcommand)]
+    /// Manage the cache of a given profile
     Cache(CacheCommand),
 
+    /// Inspect the secrets of a given profile
     Inspect(InspectArgs),
 }
 
