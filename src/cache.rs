@@ -1,6 +1,6 @@
 use semver::Version;
 use serde::{Deserialize, Serialize};
-use std::{collections::BTreeMap, fs, future::Future, path::PathBuf, time::SystemTime};
+use std::{fs, future::Future, path::PathBuf, time::SystemTime};
 use tracing::info;
 
 use crate::config_yaml::Secrets;

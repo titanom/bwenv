@@ -5,12 +5,12 @@ use std::{
     borrow::Cow,
     collections::HashMap,
     fs::File,
-    io::{BufReader, Read},
+    io::Read,
     path::{Path, PathBuf},
 };
 use tracing::info;
 
-use crate::{error::ConfigError, fs::find_up};
+use crate::error::ConfigError;
 
 fn deserialize_null_default<'de, D, T>(deserializer: D) -> Result<T, D::Error>
 where
@@ -70,10 +70,6 @@ impl<'a> Default for Secrets<'a> {
 }
 
 impl<'a> Secrets<'a> {
-    pub fn new() -> Self {
-        Secrets(HashMap::new())
-    }
-
     pub fn as_hash_map(&self) -> &HashMap<Cow<'a, str>, Cow<'a, str>> {
         &self.0
     }
@@ -195,7 +191,7 @@ fn parse_config_file<'a, P: AsRef<Path>>(file_path: P) -> Result<Config<'a>, any
     let mut file = File::open(file_path)
         .map_err(|_| ConfigError::Read)
         .unwrap();
-    file.read_to_string(&mut raw);
+    let _ = file.read_to_string(&mut raw);
 
     Ok(serde_yaml::from_str::<Config>(&raw)
         .map_err(|err| SerdeError::new(raw.to_string(), ErrorTypes::Yaml(err)))?)

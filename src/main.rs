@@ -1,10 +1,7 @@
-#![allow(warnings)]
 use clap::Parser;
 use cli::CacheCommand;
 use semver::Version;
 use std::{
-    borrow::Cow,
-    collections::HashMap,
     io::{self, Read, Write},
     path::PathBuf,
     process::{self, Command, Stdio},
@@ -93,7 +90,7 @@ async fn run_with<'a>(
         version_req,
         max_age,
         project_id,
-        mut overrides,
+        overrides,
         ..
     } = config.evaluate(&profile_name).unwrap_or_else(|_| {
         error!(
@@ -140,14 +137,11 @@ async fn run_with<'a>(
     };
 
     let CacheEntry { variables, .. } = cache
-        .get_or_revalidate(&profile_name, max_age.as_u64(), move || {
-            let project_id = project_id.clone();
-            async move {
-                let mut bitwarden_client = BitwardenClient::new(cli.token).await;
-                bitwarden_client
-                    .get_secrets_by_project_id(&project_id)
-                    .await
-            }
+        .get_or_revalidate(&profile_name, max_age.as_u64(), move || async move {
+            let mut bitwarden_client = BitwardenClient::new(cli.token).await;
+            bitwarden_client
+                .get_secrets_by_project_id(&project_id)
+                .await
         })
         .await
         .unwrap();
