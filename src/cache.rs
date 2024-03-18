@@ -54,7 +54,7 @@ impl<'a> Cache<'a> {
         Some(cache_entry)
     }
 
-    pub async fn get_or_revalidate<RevalidateFn, ReturnValue>(
+    pub async fn get_or_revalidate<'b, RevalidateFn, ReturnValue>(
         &self,
         profile: &str,
         max_age: &u64,
@@ -62,13 +62,13 @@ impl<'a> Cache<'a> {
     ) -> Option<CacheEntry>
     where
         RevalidateFn: FnOnce() -> ReturnValue,
-        ReturnValue: Future<Output = Vec<(String, String)>>,
+        ReturnValue: Future<Output = Secrets<'b>>,
     {
         match self.is_stale(profile, max_age) {
             true => {
                 info!(message = format!("Revalidating cache for profile {:?}", profile));
                 let secrets = revalidate().await;
-                self.set(profile, &secrets);
+                self.set(profile, secrets);
                 self.get(profile)
             }
             false => {
@@ -78,7 +78,7 @@ impl<'a> Cache<'a> {
         }
     }
 
-    pub fn set(&self, profile: &str, vars: &[(String, String)]) {
+    pub fn set(&self, profile: &str, variables: Secrets) {
         let cache_file_path = self.get_cache_file_path(profile);
         fs::create_dir_all(self.directory.clone()).unwrap();
         let cache_entry = CacheEntry {
@@ -87,11 +87,7 @@ impl<'a> Cache<'a> {
                 .expect("SystemTime before UNIX EPOCH!")
                 .as_millis() as u64,
             version: self.version.clone(),
-            variables: Secrets(
-                vars.iter()
-                    .map(|(key, value)| (key.into(), value.into()))
-                    .collect(),
-            ),
+            variables,
         };
         let cache_entry = serde_yaml::to_string(&cache_entry).unwrap();
         std::fs::write(cache_file_path, cache_entry).unwrap();
@@ -133,5 +129,67 @@ impl<'a> Cache<'a> {
         let mut cache_file_path = self.directory.join(profile);
         cache_file_path.set_extension("yaml");
         cache_file_path
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::{borrow::Cow, collections::HashMap};
+    use tempfile::tempdir;
+
+    fn setup_test_environment() -> (PathBuf, Version) {
+        let temp_dir = tempdir().unwrap().into_path();
+        let version = Version::parse("1.0.0").unwrap();
+        (temp_dir, version)
+    }
+
+    #[test]
+    fn test_new() {
+        let (temp_dir, version) = setup_test_environment();
+        let cache = Cache::new(temp_dir.clone(), &version);
+
+        assert_eq!(cache.directory, temp_dir.join("bwenv"));
+        assert_eq!(cache.version, &version);
+    }
+
+    #[tokio::test]
+    async fn test_get_and_set() {
+        let (temp_dir, version) = setup_test_environment();
+        let cache = Cache::new(temp_dir, &version);
+        let profile = "test_profile";
+
+        let variables: HashMap<Cow<str>, Cow<str>> =
+            [("key".into(), "value".into())].iter().cloned().collect();
+        let secrets = Secrets(variables);
+
+        cache.set(profile, secrets.clone());
+
+        let cache_entry = cache.get(profile).expect("Failed to get cache entry");
+        assert_eq!(cache_entry.variables, secrets);
+    }
+
+    #[tokio::test]
+    async fn test_clear_and_invalidate() {
+        let (temp_dir, version) = setup_test_environment();
+        let cache = Cache::new(temp_dir.clone(), &version);
+        let profile = "test_profile";
+
+        let variables: HashMap<Cow<str>, Cow<str>> =
+            [("key".into(), "value".into())].iter().cloned().collect();
+        let secrets = Secrets(variables);
+
+        cache.set(profile, secrets.clone());
+        assert!(cache.get(profile).is_some());
+
+        cache.clear(profile);
+        assert!(cache.get(profile).is_none());
+
+        cache.set(profile, secrets);
+        cache.invalidate(profile);
+        let cache_entry = cache
+            .get(profile)
+            .expect("Failed to get cache entry after invalidation");
+        assert_eq!(cache_entry.last_revalidation, 0);
     }
 }

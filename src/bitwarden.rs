@@ -6,6 +6,8 @@ use bitwarden::{
 };
 use uuid::Uuid;
 
+use crate::config_yaml::Secrets;
+
 pub struct BitwardenClient {
     _identity_url: String,
     _api_url: String,
@@ -46,10 +48,10 @@ impl BitwardenClient {
         }
     }
 
-    pub async fn get_secrets_by_project_id<T: AsRef<str>>(
+    pub async fn get_secrets_by_project_id<'a, T: AsRef<str>>(
         &mut self,
         project_id: T,
-    ) -> Vec<(String, String)> {
+    ) -> Secrets<'a> {
         let secrets_by_project_request = SecretIdentifiersByProjectRequest {
             project_id: Uuid::parse_str(project_id.as_ref()).unwrap(),
         };

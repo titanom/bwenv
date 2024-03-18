@@ -62,8 +62,18 @@ pub struct Cache {
     pub max_age: CacheMaxAge,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq)]
 pub struct Secrets<'a>(pub HashMap<Cow<'a, str>, Cow<'a, str>>);
+
+impl<'a> FromIterator<(String, String)> for Secrets<'a> {
+    fn from_iter<I: IntoIterator<Item = (String, String)>>(iter: I) -> Self {
+        let mut map = HashMap::new();
+        for (key, value) in iter {
+            map.insert(Cow::Owned(key), Cow::Owned(value));
+        }
+        Secrets(map)
+    }
+}
 
 impl<'a> Secrets<'a> {
     pub fn as_hash_map(&self) -> &HashMap<Cow<'a, str>, Cow<'a, str>> {
