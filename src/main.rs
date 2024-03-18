@@ -27,6 +27,8 @@ use crate::{bitwarden::BitwardenClient, cli::Cli, config_yaml::Secrets};
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> anyhow::Result<()> {
+    let _ = simple_logger::init_with_level(Level::Error);
+
     let local_config = config::find_local_config().unwrap();
 
     let config_path = local_config.as_pathbuf();
@@ -35,7 +37,7 @@ async fn main() -> anyhow::Result<()> {
         config::LocalConfig::Yaml(_) => {
             let config = config_yaml::Config::new(&config_path).unwrap();
             do_the_thing(config_path, config).await
-       }
+        }
         config::LocalConfig::Toml(_) => {
             let toml_config = config_toml::Config::new(&config_path).unwrap();
             let asd = toml_config.as_yaml_config();
@@ -50,7 +52,6 @@ async fn do_the_thing<'a>(
     config_path: &PathBuf,
     config: config_yaml::Config<'a>,
 ) -> anyhow::Result<()> {
-
     let cli = Cli::parse();
 
     pub fn get_program(cli: &Cli) -> Option<(String, Vec<String>)> {
@@ -64,7 +65,6 @@ async fn do_the_thing<'a>(
             None => None,
         }
     }
-
 
     let root_dir = config_path.parent().unwrap();
     let cache_dir = root_dir.join(config.cache.path.as_pathbuf());
@@ -104,7 +104,6 @@ async fn do_the_thing<'a>(
             version_req
         );
         std::process::exit(1);
-
     }
 
     let (program, program_args) = match get_program(&cli) {

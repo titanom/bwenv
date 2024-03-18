@@ -3,20 +3,20 @@ use format_serde_error::{ErrorTypes, SerdeError};
 use semver::VersionReq;
 use serde::Deserialize;
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, HashMap},
     env,
     fs::File,
     io::Read,
     path::{Path, PathBuf},
 };
 
-use crate::config_yaml;
+use crate::config_yaml::{self, Profiles};
 
 use crate::error::{ConfigError, Error};
 
 type Override = Option<BTreeMap<String, String>>;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Profile<'a> {
     pub project: Option<String>,
     pub environment: Option<String>,
@@ -51,6 +51,13 @@ pub struct ConfigEvaluation<'a> {
     pub r#override: config_yaml::Secrets<'a>,
 }
 
+fn convert_toml_profile_to_yaml_profile<'a>(toml_profile: Profile<'a>) -> config_yaml::Profile<'a> {
+    config_yaml::Profile {
+        project_id: toml_profile.project.unwrap(),
+        overrides: toml_profile.r#override,
+    }
+}
+
 impl Config<'_> {
     pub fn new<P: AsRef<Path>>(config_file_path: P) -> anyhow::Result<Self> {
         if config_file_path
@@ -64,7 +71,7 @@ impl Config<'_> {
 
         let mut config = parse_config_file(config_file_path)?;
         config.profile.insert(
-            String::from("no_profile"),
+            String::from("default"),
             Profile {
                 environment: None,
                 project: config.project.clone(),
@@ -81,7 +88,15 @@ impl Config<'_> {
             global: Some(config_yaml::Global {
                 overrides: self.r#override.clone(),
             }),
-            profiles: config_yaml::Profiles::default(),
+            profiles: Profiles::new(
+                <BTreeMap<std::string::String, Profile<'_>> as Clone>::clone(&self.profile)
+                    .into_iter()
+                    .map(|(key, toml_profile)| {
+                        let yaml_profile = convert_toml_profile_to_yaml_profile(toml_profile);
+                        (key, yaml_profile)
+                    })
+                    .collect(),
+            ),
             cache: config_yaml::Cache {
                 path: config_yaml::CachePath(self.cache.path.as_pathbuf().clone()),
                 max_age: config_yaml::CacheMaxAge(self.cache.max_age.as_u64().clone()),

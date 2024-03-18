@@ -117,8 +117,10 @@ pub struct Profile<'a> {
     pub overrides: Secrets<'a>,
 }
 
+type ProfilesMap<'a> = HashMap<String, Profile<'a>>;
+
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Profiles<'a>(HashMap<String, Profile<'a>>);
+pub struct Profiles<'a>(ProfilesMap<'a>);
 
 impl<'a> Default for Profiles<'a> {
     fn default() -> Self {
@@ -127,6 +129,10 @@ impl<'a> Default for Profiles<'a> {
 }
 
 impl<'a> Profiles<'a> {
+    pub fn new(hash_map: ProfilesMap<'a>) -> Self {
+        Self(hash_map)
+    }
+
     pub fn get(&self, key: &str) -> Result<&Profile, ConfigError> {
         self.0.get(key).ok_or(ConfigError::NoProfile)
     }
