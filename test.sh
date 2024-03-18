@@ -1,3 +1,0 @@
-#!/bin/bash
-echo "OPENAI_API_KEYS: $OPENAI_API_KEYS"
-echo "FORCE_COLOR: $FORCE_COLOR"
