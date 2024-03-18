@@ -10,9 +10,9 @@ Install latest version:
 cargo install --git ssh://git@github.com/titanom/bwenv-rs.git
 ```
 
-or a specific version (e.g. v1.0.0):
+or a specific version (e.g. v1.2.0):
 ```sh
-cargo install --git ssh://git@github.com/titanom/bwenv-rs.git --rev v1.0.0
+cargo install --git ssh://git@github.com/titanom/bwenv-rs.git --rev v1.2.0
 ```
 
 ### Manual Download
@@ -65,16 +65,43 @@ Can be configured using the env variable `BWENV_PROFILE`, one of the variables d
 Evaluation has the following order:
 1. `--profile` option
 2. `BWENV_PROFILE` env variable
-3. variables of the `environment` configuration starting with the first
 
 ## Configuration
 
-The configuration file `bwenv.toml`, located in the root of your project must be used to configure profiles & caching behavior.  
+### Yaml
+
+The configuration file `bwenv.y[a]ml`, located in the root of your project must be used to configure profiles & caching behavior.  
 This file should be committed, don't worry about leaking project IDs - they are not secret.
 The only secret, you must *never* commit, is `BWS_ACCESS_TOKEN`, which therefore can not be configured using the config file.
 
+```yaml
+version: 1.2
+
+cache:
+  path: node_modules/.cache
+
+global:
+  overrides:
+    FORCE_COLOR: 1
+
+profiles:
+  default:
+    project-id: <project-id>
+
+  development:
+    project-id: <project-id>
+
+  production:
+    project-id: <project-id>
+    overrides:
+      FORCE_COLOR: 0
+
+```
+
+### Toml (Deprecated)
+
 ```toml
-environment = ["MY_ENV", "NODE_ENV"]
+version = "1.2"
 
 # default project if no profile option is provided, useful for local development
 project = "<project-id>"
@@ -106,13 +133,13 @@ If for whatever reason, the Bitwarden API is not available - set `cache.max_age`
 
 If it is your first time running `bwenv`, your only option is to manually retrieve the secrets from the Bitwarden Website and create the cache-file yourself.  
 
-The location of the file is `<cache-path-from-config-file>/bwenv/<profile>.toml`.  
-If you use the default project without a profile, replace `<profile>` with `no_profile`.
-```toml
+The location of the file is `<cache-path-from-config-file>/bwenv/<profile>.yaml`.  
+```yaml
+---
 # replace this with the current UNIX timestamp
-last_revalidation = 1694986302222
-
-[variables]
-KEY = "<value>"
-OTHER_KEY = "<other-value>"
+last_revalidation: 1694986302222
+version: 1.2.0
+variables:
+  KEY: <value>
+  OTHER_KEY: "<other-value>"
 ```
