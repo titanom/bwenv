@@ -1,6 +1,7 @@
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, fs, future::Future, path::PathBuf, time::SystemTime};
+use tracing::info;
 
 use crate::config_yaml::Secrets;
 
@@ -64,11 +65,15 @@ impl<'a> Cache<'a> {
     {
         match self.is_stale(profile, max_age) {
             true => {
+                info!(message = format!("Revalidating cache for profile {:?}", profile));
                 let secrets = revalidate().await;
                 self.set(profile, &secrets);
                 self.get(profile)
             }
-            false => self.get(profile),
+            false => {
+                info!(message = format!("Using cached values for profile {:?}", profile));
+                self.get(profile)
+            }
         }
     }
 
@@ -93,11 +98,13 @@ impl<'a> Cache<'a> {
     }
 
     pub fn clear(&self, profile: &str) {
+        info!(message = format!("Clearing cache for profile {:?}", profile));
         let cache_file_path = self.get_cache_file_path(profile);
         let _ = fs::remove_file(cache_file_path);
     }
 
     pub fn invalidate(&self, profile: &str) {
+        info!(message = format!("Invalidating cache for profile {:?}", profile));
         if let Some(cache_entry) = self.get(profile) {
             let cache_file_path = self.get_cache_file_path(profile);
             fs::create_dir_all(self.directory.clone()).unwrap();

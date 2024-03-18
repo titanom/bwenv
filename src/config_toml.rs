@@ -9,6 +9,7 @@ use std::{
     io::Read,
     path::{Path, PathBuf},
 };
+use tracing::info;
 
 use crate::config_yaml::{self, Profiles};
 
@@ -126,6 +127,9 @@ fn find_up(filename: &str, max_parents: Option<i32>) -> Option<PathBuf> {
 }
 
 fn parse_config_file<'a, P: AsRef<Path>>(file_path: P) -> Result<Config<'a>, anyhow::Error> {
+    if let Some(path) = file_path.as_ref().to_str() {
+        info!(message = format!("Using configuration file at {:?}", path));
+    }
     let mut raw = String::new();
     let mut file = File::open(file_path)
         .map_err(|_| ConfigError::Read)
