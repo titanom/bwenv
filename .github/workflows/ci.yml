@@ -18,8 +18,8 @@ jobs:
     name: Check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: mozilla-actions/sccache-action@v0.0.3
+      - uses: actions/checkout@v4
+      - uses: mozilla-actions/sccache-action@v0.0.4
       - uses: dtolnay/rust-toolchain@stable
 
       - name: Check
@@ -31,8 +31,8 @@ jobs:
     name: Format
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: mozilla-actions/sccache-action@v0.0.3
+      - uses: actions/checkout@v4
+      - uses: mozilla-actions/sccache-action@v0.0.4
       - uses: dtolnay/rust-toolchain@stable
 
       - name: Format
@@ -45,8 +45,8 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: mozilla-actions/sccache-action@v0.0.3
+      - uses: actions/checkout@v4
+      - uses: mozilla-actions/sccache-action@v0.0.4
       - uses: dtolnay/rust-toolchain@stable
 
       - name: Lint
@@ -58,8 +58,8 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: mozilla-actions/sccache-action@v0.0.3
+      - uses: actions/checkout@v4
+      - uses: mozilla-actions/sccache-action@v0.0.4
       - uses: dtolnay/rust-toolchain@stable
 
       - name: Test
