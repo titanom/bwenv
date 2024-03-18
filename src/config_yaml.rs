@@ -53,7 +53,7 @@ impl CachePath {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct Cache {
     // TODO: make private
     #[serde(default)]
@@ -208,4 +208,113 @@ fn parse_config_file<'a, P: AsRef<Path>>(file_path: P) -> Result<Config<'a>, any
 
     Ok(serde_yaml::from_str::<Config>(&raw)
         .map_err(|err| SerdeError::new(raw.to_string(), ErrorTypes::Yaml(err)))?)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+    use tempfile::NamedTempFile;
+
+    #[test]
+    fn test_parse_config_file_success() {
+        let mut temp_file = NamedTempFile::new().unwrap();
+        writeln!(
+            temp_file,
+            r#"
+version: "1.0.0"
+cache:
+  path: "/tmp/cache"
+  max-age: 86400
+global:
+  overrides: {{}}
+profiles: {{}}
+"#
+        )
+        .unwrap();
+
+        let config = parse_config_file(temp_file.path());
+        assert!(config.is_ok());
+
+        let config = config.unwrap();
+        assert_eq!(config.version, "1.0.0");
+        assert_eq!(
+            config.cache.path.as_pathbuf().to_str().unwrap(),
+            "/tmp/cache"
+        );
+        assert_eq!(*config.cache.max_age.as_u64(), 86400);
+    }
+
+    #[test]
+    fn test_config_evaluate_profile_not_found() {
+        let config = Config {
+            version: "1.0.0".to_string(),
+            cache: Cache::default(),
+            global: None,
+            profiles: Profiles::default(),
+            path: String::new(),
+        };
+
+        let result = config.evaluate("nonexistent");
+        assert!(matches!(result, Err(ConfigError::NoProfile)));
+    }
+
+    #[test]
+    fn test_config_evaluate_with_overrides() {
+        let mut temp_file = NamedTempFile::new().unwrap();
+        writeln!(
+            temp_file,
+            r#"
+version: "1.0.0"
+cache:
+  path: "/tmp/cache"
+  max-age: 86400
+global:
+  overrides:
+    global_key: "global_value"
+profiles:
+  test_profile:
+    project-id: "test_project"
+    overrides:
+      profile_key: "profile_value"
+      global_key: "overridden_global_value"
+"#
+        )
+        .unwrap();
+
+        let config = parse_config_file(temp_file.path()).unwrap();
+        let eval_result = config.evaluate("test_profile").unwrap();
+
+        assert_eq!(eval_result.profile_name, "test_profile");
+        assert_eq!(eval_result.project_id, "test_project");
+        assert_eq!(
+            eval_result.overrides.0.get("global_key").unwrap(),
+            "overridden_global_value"
+        );
+        assert_eq!(
+            eval_result.overrides.0.get("profile_key").unwrap(),
+            "profile_value"
+        );
+    }
+
+    #[test]
+    fn test_global_overrides_without_profile() {
+        let config = Config {
+            version: "1.0.0".to_string(),
+            cache: Cache::default(),
+            global: Some(Global {
+                overrides: Secrets(
+                    [("global_key".into(), "global_value".into())]
+                        .iter()
+                        .cloned()
+                        .collect(),
+                ),
+            }),
+            profiles: Profiles::default(),
+            path: String::new(),
+        };
+
+        let eval_result = config.evaluate("nonexistent").err().unwrap();
+        assert!(matches!(eval_result, ConfigError::NoProfile));
+    }
 }
