@@ -22,13 +22,5 @@ inquire = "0.7.2"
 tabular = "0.2.0"
 colored = "2.1.0"
 
-[target.aarch64-unknown-linux-musl]
-linker = "aarch64-linux-gnu-gcc"
-rustflags = ["-C", "target-feature=+crt-static", "-C", "link-arg=-lgcc"]
-
-[target.aarch64-unknown-linux-gnu]
-linker = "aarch64-linux-gnu-gcc"
-rustflags = ["-C", "target-feature=+crt-static", "-C", "link-arg=-lgcc"]
-
 [dev-dependencies]
 tempfile = "3.10.1"
