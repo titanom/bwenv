@@ -8,6 +8,7 @@ use std::{
     io::{BufReader, Read},
     path::{Path, PathBuf},
 };
+use tracing::info;
 
 use crate::{error::ConfigError, fs::find_up};
 
@@ -169,6 +170,8 @@ impl<'a> Config<'a> {
     ) -> Result<ConfigEvaluation<'b>, ConfigError> {
         let profile = self.profiles.get(profile_name)?;
 
+        info!(message = format!("Using profile {:?}", profile_name));
+
         let version = VersionReq::parse(&self.version).unwrap();
 
         let global_overrides = &self.global.as_ref().unwrap().overrides;
@@ -187,6 +190,7 @@ impl<'a> Config<'a> {
 }
 
 fn parse_config_file<'a, P: AsRef<Path>>(file_path: P) -> Result<Config<'a>, anyhow::Error> {
+    info!(message = format!("Using configuration file at {:?}", file_path.as_ref()));
     let mut raw = String::new();
     let mut file = File::open(file_path)
         .map_err(|_| ConfigError::Read)
