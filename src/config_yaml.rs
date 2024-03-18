@@ -8,6 +8,7 @@ use std::{
     io::Read,
     path::{Path, PathBuf},
 };
+use tabular::{Row, Table};
 use tracing::info;
 
 use crate::error::ConfigError;
@@ -89,6 +90,19 @@ impl<'a> Secrets<'a> {
             .into_iter()
             .map(|(key, value)| (key.to_string(), value.to_string()))
             .collect()
+    }
+
+    pub fn table(&self, reveal: bool) -> String {
+        let mut table = Table::new("{:>} :: {:<}");
+        let map = self.as_hash_map();
+        for (key, value) in map.into_iter() {
+            table.add_row(Row::new().with_cell(key).with_cell(if reveal {
+                value
+            } else {
+                "**redacted**"
+            }));
+        }
+        table.to_string()
     }
 }
 

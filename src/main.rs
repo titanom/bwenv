@@ -118,6 +118,7 @@ async fn run_with<'a>(
             }
         },
         None => {}
+        Some(_) => {}
     }
 
     if !version_req.matches(&version) {
@@ -128,17 +129,10 @@ async fn run_with<'a>(
         std::process::exit(1);
     }
 
-    let (program, program_args) = match get_program(&cli) {
-        Some(t) => t,
-        None => {
-            error!("no slop provided");
-            std::process::exit(1)
-        }
-    };
-
+    let token = cli.token.clone();
     let CacheEntry { variables, .. } = cache
         .get_or_revalidate(&profile_name, max_age.as_u64(), move || async move {
-            let mut bitwarden_client = BitwardenClient::new(cli.token).await;
+            let mut bitwarden_client = BitwardenClient::new(token).await;
             bitwarden_client
                 .get_secrets_by_project_id(&project_id)
                 .await
@@ -147,6 +141,33 @@ async fn run_with<'a>(
         .unwrap();
 
     let mut secrets = Secrets::merge(&variables, &overrides);
+
+    match &cli.command {
+        Some(cli::Command::Inspect(inspect_args)) => {
+            let reveal = if inspect_args.reveal {
+                inquire::Confirm::new("reveal secrets in output")
+                    .with_default(false)
+                    .with_help_message("Enabling this option will display sensitive information in plain text. Use with caution, especially in shared or public environments.")
+                    .prompt()
+            } else {
+                Ok(false)
+            }
+            .unwrap();
+
+            print!("{}", &secrets.table(reveal));
+            process::exit(1);
+        }
+        None => {}
+        Some(_) => {}
+    }
+
+    let (program, program_args) = match get_program(&cli) {
+        Some(t) => t,
+        None => {
+            error!("no slop provided");
+            std::process::exit(1)
+        }
+    };
 
     let mut cmd = Command::new(program);
     cmd.envs(secrets.as_vec());

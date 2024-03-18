@@ -15,7 +15,8 @@ pub struct Cli {
         long_help = "access token for the service account",
         help = "access token for the service account",
         env = "BWS_ACCESS_TOKEN",
-        required = false
+        required = false,
+        hide_env_values = true
     )]
     pub token: String,
 
@@ -35,7 +36,8 @@ pub struct Cli {
         value_enum,
         default_value_t = LogLevel::Info,
         help = "Set the log level",
-        env = "BWENV_LOG_LEVEL"
+        env = "BWENV_LOG_LEVEL",
+        required = false
     )]
     pub log_level: LogLevel,
 }
@@ -65,6 +67,8 @@ impl LogLevel {
 pub enum Command {
     #[command(subcommand)]
     Cache(CacheCommand),
+
+    Inspect(InspectArgs),
 }
 
 #[derive(Subcommand, Debug)]
@@ -74,4 +78,16 @@ pub enum CacheCommand {
 
     /// invalidate the cache of a given profile
     Invalidate,
+}
+
+#[derive(Parser, Debug)]
+pub struct InspectArgs {
+    #[arg(
+        short,
+        long,
+        default_value_t = false,
+        help = "reveal secrets in output",
+        long_help = "reveal secrets in output"
+    )]
+    pub reveal: bool,
 }
