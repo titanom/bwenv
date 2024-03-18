@@ -27,7 +27,7 @@ use crate::{bitwarden::BitwardenClient, cli::Cli, config_yaml::Secrets};
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> anyhow::Result<()> {
-    let _ = simple_logger::init_with_level(Level::Error);
+    let _ = simple_logger::init_with_level(Level::Warn);
 
     let local_config = config::find_local_config().unwrap();
 
@@ -36,19 +36,20 @@ async fn main() -> anyhow::Result<()> {
     match local_config {
         config::LocalConfig::Yaml(_) => {
             let config = config_yaml::Config::new(&config_path).unwrap();
-            do_the_thing(config_path, config).await
+            run_with(config_path, config).await
         }
         config::LocalConfig::Toml(_) => {
             let toml_config = config_toml::Config::new(&config_path).unwrap();
-            let asd = toml_config.as_yaml_config();
-            do_the_thing(config_path, asd).await
+            let config = toml_config.as_yaml_config();
+            log::warn!("bwenv.toml is deprecated. Please migrate to bwenv.yaml");
+            run_with(config_path, config).await
         }
     }?;
 
     Ok(())
 }
 
-async fn do_the_thing<'a>(
+async fn run_with<'a>(
     config_path: &PathBuf,
     config: config_yaml::Config<'a>,
 ) -> anyhow::Result<()> {
