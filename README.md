@@ -106,14 +106,16 @@ This file should be committed, don't worry about leaking project IDs - they are 
 The only secret, you must _never_ commit, is `BWS_ACCESS_TOKEN`, which therefore can not be configured using the config file.
 
 ```yaml
-version: 1.2
+# yaml-language-server: $schema=https://raw.githubusercontent.com/titanom/bwenv/master/schema.json
+
+version: '1.2'
 
 cache:
   path: node_modules/.cache
 
 global:
   overrides:
-    FORCE_COLOR: 1
+    FORCE_COLOR: '1'
 
 profiles:
   default:
@@ -125,7 +127,7 @@ profiles:
   production:
     project-id: <project-id>
     overrides:
-      FORCE_COLOR: 0
+      FORCE_COLOR: '0'
 ```
 
 ### Toml (Deprecated)
