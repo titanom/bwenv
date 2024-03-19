@@ -36,7 +36,7 @@ async fn main() {
 
     let config_path = local_config.as_pathbuf();
 
-    let _ = match local_config {
+    match local_config {
         config::LocalConfig::Yaml(_) => {
             let config = config_yaml::Config::new(config_path).unwrap();
             run_with(cli, config_path, config).await
