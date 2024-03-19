@@ -106,7 +106,7 @@ This file should be committed, don't worry about leaking project IDs - they are 
 The only secret, you must _never_ commit, is `BWS_ACCESS_TOKEN`, which therefore can not be configured using the config file.
 
 ```yaml
-# yaml-language-server: $schema=https://raw.githubusercontent.com/titanom/bwenv/master/schema.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/titanom/bwenv/v1.2.0/schema.json
 
 version: '1.2'
 
