@@ -346,12 +346,12 @@ profiles:
             version: VersionReq::parse("1.0.0").unwrap(),
             cache: Cache::default(),
             global: Some(Global {
-                overrides: Secrets(
+                overrides: GlobalOverrides(Secrets(
                     [("global_key".into(), "global_value".into())]
                         .iter()
                         .cloned()
                         .collect(),
-                ),
+                )),
             }),
             profiles: Profiles::default(),
             path: String::new(),
