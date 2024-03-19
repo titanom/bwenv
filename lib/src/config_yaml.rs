@@ -1,7 +1,6 @@
 use colored::Colorize;
 use format_serde_error::{ErrorTypes, SerdeError};
 use schemars::JsonSchema;
-use semver::VersionReq;
 use serde::{Deserialize, Deserializer, Serialize};
 use std::{
     borrow::Cow,
@@ -13,7 +12,7 @@ use std::{
 use tabular::{Row, Table};
 use tracing::info;
 
-use crate::error::ConfigError;
+use crate::{error::ConfigError, schema_types::VersionReq};
 
 fn deserialize_null_default<'de, D, T>(deserializer: D) -> Result<T, D::Error>
 where
@@ -56,15 +55,26 @@ impl CachePath {
 
 #[derive(Debug, Serialize, Deserialize, Default, JsonSchema)]
 pub struct Cache {
-    // TODO: make private
     #[serde(default)]
+    #[schemars(
+        title = "Cache Path",
+        description = "Path to the local secrets cache directory relative to the project root"
+    )]
     pub path: CachePath,
+
     #[serde(default, rename = "max-age")]
+    #[schemars(
+        title = "Cache Max Age",
+        description = "Maximum age of the local secrets cache in seconds"
+    )]
     pub max_age: CacheMaxAge,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq, JsonSchema)]
 pub struct Secrets<'a>(pub HashMap<Cow<'a, str>, Cow<'a, str>>);
+
+#[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq, JsonSchema)]
+pub struct GlobalOverrides<'a>(pub Secrets<'a>);
 
 impl<'a> FromIterator<(String, String)> for Secrets<'a> {
     fn from_iter<I: IntoIterator<Item = (String, String)>>(iter: I) -> Self {
@@ -113,19 +123,34 @@ impl<'a> Secrets<'a> {
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[schemars(title = "Global", description = "Global configuration options")]
 pub struct Global<'a> {
     #[serde(
         default,
         rename = "overrides",
         deserialize_with = "deserialize_null_default"
     )]
-    pub overrides: Secrets<'a>,
+    #[schemars(
+        title = "Global Overrides",
+        description = "Overrides that apply to all profiles unless specified by the profile itself"
+    )]
+    pub overrides: GlobalOverrides<'a>,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[schemars(title = "Profile", description = "Configuration for a single profile")]
 pub struct Profile<'a> {
+    #[schemars(
+        title = "Profile Bitwarden Project ID",
+        description = "ID of the Bitwarden project"
+    )]
     #[serde(rename = "project-id")]
     pub project_id: String,
+
+    #[schemars(
+        title = "Profile Overrides",
+        description = "Profile-specific secret overrides"
+    )]
     #[serde(
         default,
         rename = "overrides",
@@ -150,12 +175,31 @@ impl<'a> Profiles<'a> {
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
-// TODO: make fields private
 pub struct Config<'a> {
-    pub version: String,
+    #[schemars(
+        title = "Version",
+        description = "A semantic version that the version of the bwenv CLI must match"
+    )]
+    pub version: VersionReq,
+
+    #[schemars(
+        title = "Cache",
+        description = "Options related to the local secrets cache"
+    )]
     pub cache: Cache,
+
+    #[schemars(
+        title = "Global",
+        description = "Overrides for global configuration options, applied to all profiles"
+    )]
     pub global: Option<Global<'a>>,
+
+    #[schemars(
+        title = "Profiles",
+        description = "List of profiles that hold information about the bitwarden project and profile-specific overrides"
+    )]
     pub profiles: Profiles<'a>,
+
     #[serde(skip)]
     pub path: String,
 }
@@ -182,18 +226,16 @@ impl<'a> Config<'a> {
 
         info!(message = format!("Using profile {:?}", profile_name));
 
-        let version = VersionReq::parse(&self.version).unwrap();
-
         let global_overrides = &self.global.as_ref().unwrap().overrides;
         let profile_overrides = &profile.overrides;
 
-        let overrides = Secrets::merge(global_overrides, profile_overrides);
+        let overrides = Secrets::merge(&global_overrides.0, profile_overrides);
 
         Ok(ConfigEvaluation {
             profile_name,
             overrides,
             project_id: &profile.project_id,
-            version_req: version,
+            version_req: self.version.clone(),
             max_age: &self.cache.max_age,
         })
     }
@@ -238,7 +280,7 @@ profiles: {{}}
         assert!(config.is_ok());
 
         let config = config.unwrap();
-        assert_eq!(config.version, "1.0.0");
+        assert_eq!(config.version, VersionReq::parse("1.0.0").unwrap());
         assert_eq!(
             config.cache.path.as_pathbuf().to_str().unwrap(),
             "/tmp/cache"
@@ -249,7 +291,7 @@ profiles: {{}}
     #[test]
     fn test_config_evaluate_profile_not_found() {
         let config = Config {
-            version: "1.0.0".to_string(),
+            version: VersionReq::parse("1.0.0").unwrap(),
             cache: Cache::default(),
             global: None,
             profiles: Profiles::default(),
@@ -301,7 +343,7 @@ profiles:
     #[test]
     fn test_global_overrides_without_profile() {
         let config = Config {
-            version: "1.0.0".to_string(),
+            version: VersionReq::parse("1.0.0").unwrap(),
             cache: Cache::default(),
             global: Some(Global {
                 overrides: Secrets(

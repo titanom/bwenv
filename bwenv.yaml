@@ -1,11 +1,13 @@
-version: 1.2
+# yaml-language-server: $schema=./schema.json
+
+version: '1.2'
 
 cache:
   path: node_modules/.cache
 
 global:
   overrides:
-    FORCE_COLOR: 1
+    FORCE_COLOR: '1.2'
     OPENAI_API_KEYS: default overrides
 
 profiles:
