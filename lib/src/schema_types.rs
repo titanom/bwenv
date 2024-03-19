@@ -1,6 +1,6 @@
 use schemars::{
     gen::SchemaGenerator,
-    schema::{InstanceType, Schema, SchemaObject, StringValidation},
+    schema::{InstanceType, Schema, SchemaObject},
     JsonSchema,
 };
 use serde::{Deserialize, Deserializer, Serialize};
@@ -91,7 +91,7 @@ impl JsonSchema for VersionReq {
     fn json_schema(_: &mut SchemaGenerator) -> Schema {
         SchemaObject {
             instance_type: Some(InstanceType::String.into()),
-            string: Some(Box::new(StringValidation::default())),
+            string: Some(Box::default()),
             ..Default::default()
         }
         .into()

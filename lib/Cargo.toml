@@ -16,8 +16,8 @@ uuid = "1.4.1"
 anyhow = "1.0.81"
 toml = "0.5"
 bitwarden = { version = "0.3.1", features = ["secrets"] }
-derived-deref = "2.1.0"
-tokio = { version = "1.33.0", features = ["full"] }
+# derived-deref = "2.1.0"
 
 [dev-dependencies]
 tempfile = "3.10.1"
+tokio = { version = "1.33.0", features = ["full"] }
