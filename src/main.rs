@@ -1,3 +1,4 @@
+#![warn(unused_extern_crates)]
 use clap::Parser;
 use cli::CacheCommand;
 use semver::Version;

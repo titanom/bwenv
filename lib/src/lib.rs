@@ -1,3 +1,4 @@
+#![warn(unused_extern_crates)]
 pub mod bitwarden;
 pub mod cache;
 pub mod config;

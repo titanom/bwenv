@@ -15,9 +15,6 @@ bwenv-lib = { path = "./lib" }
 tracing = "0.1.40"
 semver = "1.0.22"
 
-[dev-dependencies]
-tempfile = "3.10.1"
-
 [workspace]
 members = ["lib", "."]
 

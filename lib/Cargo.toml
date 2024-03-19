@@ -3,8 +3,6 @@ name = "bwenv-lib"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 tabular = "0.2.0"
 colored = "2.1.0"
@@ -19,3 +17,7 @@ anyhow = "1.0.81"
 toml = "0.5"
 bitwarden = { version = "0.3.1", features = ["secrets"] }
 derived-deref = "2.1.0"
+tokio = { version = "1.33.0", features = ["full"] }
+
+[dev-dependencies]
+tempfile = "3.10.1"
