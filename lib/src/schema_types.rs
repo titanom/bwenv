@@ -1,16 +1,13 @@
+use derived_deref::Deref;
 use schemars::{
     gen::SchemaGenerator,
     schema::{InstanceType, Schema, SchemaObject},
     JsonSchema,
 };
 use serde::{Deserialize, Deserializer, Serialize};
-use std::{
-    borrow::Cow,
-    fmt::Display,
-    ops::{Deref, DerefMut},
-};
+use std::{borrow::Cow, fmt::Display};
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Deref)]
 pub struct VersionReq(pub semver::VersionReq);
 
 impl Serialize for VersionReq {
@@ -18,7 +15,7 @@ impl Serialize for VersionReq {
     where
         S: serde::Serializer,
     {
-        serializer.serialize_str(&self.0.to_string())
+        serializer.serialize_str(&self.to_string())
     }
 }
 
@@ -37,20 +34,6 @@ impl VersionReq {
 impl Display for VersionReq {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
-    }
-}
-
-impl Deref for VersionReq {
-    type Target = semver::VersionReq;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for VersionReq {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
     }
 }
 

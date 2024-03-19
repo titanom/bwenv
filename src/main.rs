@@ -65,7 +65,7 @@ async fn run_with<'a>(cli: cli::Cli, config_path: &Path, config: config_yaml::Co
     }
 
     let root_dir = config_path.parent().unwrap();
-    let cache_dir = root_dir.join(config.cache.path.as_pathbuf());
+    let cache_dir = root_dir.join(config.cache.path.as_path());
 
     let profile_name = cli.profile.clone().unwrap_or_else(|| {
         info!(message = "No profile specified, falling back to default profile");
@@ -117,7 +117,7 @@ async fn run_with<'a>(cli: cli::Cli, config_path: &Path, config: config_yaml::Co
 
     let token = cli.token.clone();
     let CacheEntry { variables, .. } = cache
-        .get_or_revalidate(&profile_name, max_age.as_u64(), move || async move {
+        .get_or_revalidate(&profile_name, max_age, move || async move {
             let mut bitwarden_client = bitwarden::BitwardenClient::new(token).await;
             bitwarden_client
                 .get_secrets_by_project_id(&project_id)

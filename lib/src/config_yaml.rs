@@ -1,4 +1,5 @@
 use colored::Colorize;
+use derived_deref::Deref;
 use format_serde_error::{ErrorTypes, SerdeError};
 use schemars::JsonSchema;
 use serde::{Deserialize, Deserializer, Serialize};
@@ -23,7 +24,7 @@ where
     Ok(opt.unwrap_or_default())
 }
 
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Serialize, Deserialize, JsonSchema, Deref)]
 pub struct CacheMaxAge(pub u64);
 
 impl Default for CacheMaxAge {
@@ -32,24 +33,12 @@ impl Default for CacheMaxAge {
     }
 }
 
-impl CacheMaxAge {
-    pub fn as_u64(&self) -> &u64 {
-        &self.0
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Serialize, Deserialize, JsonSchema, Deref)]
 pub struct CachePath(pub PathBuf);
 
 impl Default for CachePath {
     fn default() -> Self {
         CachePath(PathBuf::from(".cache"))
-    }
-}
-
-impl CachePath {
-    pub fn as_pathbuf(&self) -> &PathBuf {
-        &self.0
     }
 }
 
@@ -70,10 +59,10 @@ pub struct Cache {
     pub max_age: CacheMaxAge,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq, JsonSchema)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq, JsonSchema, Deref)]
 pub struct Secrets<'a>(pub HashMap<Cow<'a, str>, Cow<'a, str>>);
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq, JsonSchema)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq, JsonSchema, Deref)]
 pub struct GlobalOverrides<'a>(pub Secrets<'a>);
 
 impl<'a> FromIterator<(String, String)> for Secrets<'a> {
@@ -87,31 +76,24 @@ impl<'a> FromIterator<(String, String)> for Secrets<'a> {
 }
 
 impl<'a> Secrets<'a> {
-    pub fn as_hash_map(&self) -> &HashMap<Cow<'a, str>, Cow<'a, str>> {
-        &self.0
-    }
-
     pub fn merge(a: &'a Secrets<'a>, b: &'a Secrets<'a>) -> Secrets<'a> {
         Secrets(
-            a.as_hash_map()
-                .iter()
-                .chain(b.as_hash_map().iter())
+            a.iter()
+                .chain(b.iter())
                 .map(|(k, v)| (Cow::Borrowed(k.as_ref()), Cow::Borrowed(v.as_ref())))
                 .collect(),
         )
     }
 
     pub fn as_vec(&mut self) -> Vec<(String, String)> {
-        self.as_hash_map()
-            .iter()
+        self.iter()
             .map(|(key, value)| (key.to_string(), value.to_string()))
             .collect()
     }
 
     pub fn table(&self, reveal: bool) -> String {
         let mut table = Table::new("{:>} :: {:<}");
-        let map = self.as_hash_map();
-        for (key, value) in map.iter() {
+        for (key, value) in self.iter() {
             table.add_row(Row::new().with_cell(key).with_cell(if reveal {
                 value.normal()
             } else {
@@ -161,7 +143,7 @@ pub struct Profile<'a> {
 
 type ProfilesMap<'a> = HashMap<String, Profile<'a>>;
 
-#[derive(Debug, Serialize, Deserialize, Default, JsonSchema)]
+#[derive(Debug, Serialize, Deserialize, Default, JsonSchema, Deref)]
 pub struct Profiles<'a>(ProfilesMap<'a>);
 
 impl<'a> Profiles<'a> {
@@ -229,7 +211,7 @@ impl<'a> Config<'a> {
         let global_overrides = &self.global.as_ref().unwrap().overrides;
         let profile_overrides = &profile.overrides;
 
-        let overrides = Secrets::merge(&global_overrides.0, profile_overrides);
+        let overrides = Secrets::merge(global_overrides, profile_overrides);
 
         Ok(ConfigEvaluation {
             profile_name,
@@ -281,11 +263,8 @@ profiles: {{}}
 
         let config = config.unwrap();
         assert_eq!(config.version, VersionReq::parse("1.0.0").unwrap());
-        assert_eq!(
-            config.cache.path.as_pathbuf().to_str().unwrap(),
-            "/tmp/cache"
-        );
-        assert_eq!(*config.cache.max_age.as_u64(), 86400);
+        assert_eq!(config.cache.path.to_str().unwrap(), "/tmp/cache");
+        assert_eq!(*config.cache.max_age, 86400);
     }
 
     #[test]
@@ -331,11 +310,11 @@ profiles:
         assert_eq!(eval_result.profile_name, "test_profile");
         assert_eq!(eval_result.project_id, "test_project");
         assert_eq!(
-            eval_result.overrides.0.get("global_key").unwrap(),
+            eval_result.overrides.get("global_key").unwrap(),
             "overridden_global_value"
         );
         assert_eq!(
-            eval_result.overrides.0.get("profile_key").unwrap(),
+            eval_result.overrides.get("profile_key").unwrap(),
             "profile_value"
         );
     }
