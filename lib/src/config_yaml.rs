@@ -1,5 +1,6 @@
 use colored::Colorize;
 use format_serde_error::{ErrorTypes, SerdeError};
+use schemars::JsonSchema;
 use semver::VersionReq;
 use serde::{Deserialize, Deserializer, Serialize};
 use std::{
@@ -23,7 +24,7 @@ where
     Ok(opt.unwrap_or_default())
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct CacheMaxAge(pub u64);
 
 impl Default for CacheMaxAge {
@@ -38,7 +39,7 @@ impl CacheMaxAge {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct CachePath(pub PathBuf);
 
 impl Default for CachePath {
@@ -53,7 +54,7 @@ impl CachePath {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, JsonSchema)]
 pub struct Cache {
     // TODO: make private
     #[serde(default)]
@@ -62,7 +63,7 @@ pub struct Cache {
     pub max_age: CacheMaxAge,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq, JsonSchema)]
 pub struct Secrets<'a>(pub HashMap<Cow<'a, str>, Cow<'a, str>>);
 
 impl<'a> FromIterator<(String, String)> for Secrets<'a> {
@@ -111,7 +112,7 @@ impl<'a> Secrets<'a> {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct Global<'a> {
     #[serde(
         default,
@@ -121,7 +122,7 @@ pub struct Global<'a> {
     pub overrides: Secrets<'a>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct Profile<'a> {
     #[serde(rename = "project-id")]
     pub project_id: String,
@@ -135,7 +136,7 @@ pub struct Profile<'a> {
 
 type ProfilesMap<'a> = HashMap<String, Profile<'a>>;
 
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, JsonSchema)]
 pub struct Profiles<'a>(ProfilesMap<'a>);
 
 impl<'a> Profiles<'a> {
@@ -148,7 +149,7 @@ impl<'a> Profiles<'a> {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
 // TODO: make fields private
 pub struct Config<'a> {
     pub version: String,

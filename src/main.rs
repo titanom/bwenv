@@ -10,24 +10,14 @@ use std::{
 use tracing::{error, info, span, warn, Level};
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
-mod bitwarden;
-mod cache;
 mod cli;
-mod config;
-mod config_toml;
-mod config_yaml;
-mod error;
-mod fs;
-mod time;
 
-use cache::CacheEntry;
-
-use crate::cache::Cache;
-use crate::{bitwarden::BitwardenClient, cli::Cli, config_yaml::Secrets};
+use bwenv_lib::cache::CacheEntry;
+use bwenv_lib::{bitwarden, cache, config, config_toml, config_yaml};
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
-    let cli = Cli::parse();
+    let cli = cli::Cli::parse();
 
     tracing_subscriber::registry()
         .with(EnvFilter::new(cli.log_level.as_tracing_env()))
@@ -60,8 +50,8 @@ async fn main() {
     };
 }
 
-async fn run_with<'a>(cli: Cli, config_path: &Path, config: config_yaml::Config<'a>) {
-    pub fn get_program(cli: &Cli) -> Option<(String, Vec<String>)> {
+async fn run_with<'a>(cli: cli::Cli, config_path: &Path, config: config_yaml::Config<'a>) {
+    pub fn get_program(cli: &cli::Cli) -> Option<(String, Vec<String>)> {
         let slop = &cli.slop;
         match &slop.first() {
             Some(program) => {
@@ -99,7 +89,7 @@ async fn run_with<'a>(cli: Cli, config_path: &Path, config: config_yaml::Config<
 
     let version = Version::parse(env!("CARGO_PKG_VERSION")).unwrap();
 
-    let cache = Cache::new(cache_dir, &version);
+    let cache = cache::Cache::new(cache_dir, &version);
 
     match &cli.command {
         Some(cli::Command::Cache(cache_command)) => match cache_command {
@@ -127,7 +117,7 @@ async fn run_with<'a>(cli: Cli, config_path: &Path, config: config_yaml::Config<
     let token = cli.token.clone();
     let CacheEntry { variables, .. } = cache
         .get_or_revalidate(&profile_name, max_age.as_u64(), move || async move {
-            let mut bitwarden_client = BitwardenClient::new(token).await;
+            let mut bitwarden_client = bitwarden::BitwardenClient::new(token).await;
             bitwarden_client
                 .get_secrets_by_project_id(&project_id)
                 .await
@@ -135,7 +125,7 @@ async fn run_with<'a>(cli: Cli, config_path: &Path, config: config_yaml::Config<
         .await
         .unwrap();
 
-    let mut secrets = Secrets::merge(&variables, &overrides);
+    let mut secrets = config_yaml::Secrets::merge(&variables, &overrides);
 
     if let Some(cli::Command::Inspect(inspect_args)) = &cli.command {
         let reveal = if inspect_args.reveal {

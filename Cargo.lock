@@ -264,22 +264,33 @@ name = "bwenv"
 version = "1.2.0"
 dependencies = [
  "anyhow",
- "bitwarden",
+ "bwenv-lib",
  "clap",
  "clap-markdown",
- "colored",
- "format_serde_error",
  "inquire",
  "openssl",
+ "semver",
+ "tempfile",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "bwenv-lib"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bitwarden",
+ "colored",
+ "format_serde_error",
+ "schemars",
  "semver",
  "serde",
  "serde_yaml",
  "tabular",
- "tempfile",
- "tokio",
  "toml",
  "tracing",
- "tracing-subscriber",
  "uuid",
 ]
 
@@ -1430,9 +1441,9 @@ dependencies = [
 
 [[package]]
 name = "schemars"
-version = "0.8.12"
+version = "0.8.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "02c613288622e5f0c3fdc5dbd4db1c5fbe752746b1d1a56a0630b78fd00de44f"
+checksum = "45a28f4c49489add4ce10783f7911893516f15afe45d015608d41faca6bc4d29"
 dependencies = [
  "chrono",
  "dyn-clone",
@@ -1444,9 +1455,9 @@ dependencies = [
 
 [[package]]
 name = "schemars_derive"
-version = "0.8.12"
+version = "0.8.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "109da1e6b197438deb6db99952990c7f959572794b80ff93707d55a232545e7c"
+checksum = "c767fd6fa65d9ccf9cf026122c1b555f2ef9a4f0cea69da4d7dbc3e258d30967"
 dependencies = [
  "proc-macro2",
  "quote",
