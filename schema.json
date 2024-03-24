@@ -1,0 +1,146 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Config",
+  "type": "object",
+  "required": [
+    "cache",
+    "profiles",
+    "version"
+  ],
+  "properties": {
+    "cache": {
+      "title": "Cache",
+      "description": "Options related to the local secrets cache",
+      "allOf": [
+        {
+          "$ref": "#/definitions/Cache"
+        }
+      ]
+    },
+    "global": {
+      "title": "Global",
+      "description": "Overrides for global configuration options, applied to all profiles",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/Global"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "profiles": {
+      "title": "Profiles",
+      "description": "List of profiles that hold information about the bitwarden project and profile-specific overrides",
+      "allOf": [
+        {
+          "$ref": "#/definitions/Profiles"
+        }
+      ]
+    },
+    "version": {
+      "title": "Version",
+      "description": "A semantic version that the version of the bwenv CLI must match",
+      "allOf": [
+        {
+          "$ref": "#/definitions/VersionReq"
+        }
+      ]
+    }
+  },
+  "definitions": {
+    "Cache": {
+      "type": "object",
+      "properties": {
+        "max-age": {
+          "title": "Cache Max Age",
+          "description": "Maximum age of the local secrets cache in seconds",
+          "default": 86400,
+          "allOf": [
+            {
+              "$ref": "#/definitions/CacheMaxAge"
+            }
+          ]
+        },
+        "path": {
+          "title": "Cache Path",
+          "description": "Path to the local secrets cache directory relative to the project root",
+          "default": ".cache",
+          "allOf": [
+            {
+              "$ref": "#/definitions/CachePath"
+            }
+          ]
+        }
+      }
+    },
+    "CacheMaxAge": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    },
+    "CachePath": {
+      "type": "string"
+    },
+    "Global": {
+      "title": "Global",
+      "description": "Global configuration options",
+      "type": "object",
+      "properties": {
+        "overrides": {
+          "title": "Global Overrides",
+          "description": "Overrides that apply to all profiles unless specified by the profile itself",
+          "default": {},
+          "allOf": [
+            {
+              "$ref": "#/definitions/GlobalOverrides"
+            }
+          ]
+        }
+      }
+    },
+    "GlobalOverrides": {
+      "$ref": "#/definitions/Secrets"
+    },
+    "Profile": {
+      "title": "Profile",
+      "description": "Configuration for a single profile",
+      "type": "object",
+      "required": [
+        "project-id"
+      ],
+      "properties": {
+        "overrides": {
+          "title": "Profile Overrides",
+          "description": "Profile-specific secret overrides",
+          "default": {},
+          "allOf": [
+            {
+              "$ref": "#/definitions/Secrets"
+            }
+          ]
+        },
+        "project-id": {
+          "title": "Profile Bitwarden Project ID",
+          "description": "ID of the Bitwarden project",
+          "type": "string"
+        }
+      }
+    },
+    "Profiles": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/Profile"
+      }
+    },
+    "Secrets": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "VersionReq": {
+      "type": "string"
+    }
+  }
+}
