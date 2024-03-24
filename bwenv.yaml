@@ -1,20 +1,15 @@
 version: 1.2
 
 cache:
-  path: node_modules/.cache
+  path: ../node_modules/.cache/bwenv
 
 global:
   overrides:
     FORCE_COLOR: 1
-    OPENAI_API_KEYS: default overrides
 
 profiles:
   default:
-    project-id: 227f4033-fdbb-482b-847c-b06600dc8e69
+    project-id: dbbd2f6b-d83b-4de9-b2f8-b13d011afaaa
 
-  development:
-    project-id: 227f4033-fdbb-482b-847c-b06600dc8e69
-
-  production:
-    project-id: 227f4033-fdbb-482b-847c-b06600dc8e69
-
+  other:
+    project-id: d2d4abff-4e25-4f52-b89c-b13d011bddf1
