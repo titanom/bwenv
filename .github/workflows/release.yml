@@ -12,6 +12,7 @@ permissions:
 env:
   SCCACHE_GHA_ENABLED: "true"
   RUSTC_WRAPPER: "sccache"
+  BWS_ACCESS_TOKEN: ${{ secrets.BWS_ACCESS_TOKEN }}
 
 jobs:
   check:
