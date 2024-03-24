@@ -10,15 +10,13 @@ use std::{
 use tracing::{error, info, span, warn, Level};
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
-mod bitwarden;
-mod cache;
 mod cli;
-mod config;
-mod config_toml;
-mod config_yaml;
-mod error;
-mod fs;
-mod time;
+
+use bwenv_lib::bitwarden;
+use bwenv_lib::cache;
+use bwenv_lib::config;
+use bwenv_lib::config_toml;
+use bwenv_lib::config_yaml;
 
 use cache::CacheEntry;
 
