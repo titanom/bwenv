@@ -1,30 +1,33 @@
 use assert_cmd::prelude::*;
 use predicates::prelude::*;
+use std::fs;
 use std::process::Command;
 
 use dotenv_parser::parse_dotenv;
 
-#[test]
-fn missing_token() -> Result<(), Box<dyn std::error::Error>> {
-    let mut cmd = Command::cargo_bin("bwenv")?;
-    // cmd.arg("foobar").arg("test/file/doesnt/exist");
-
-    cmd.assert().failure().stderr(predicate::str::contains(
-        "The following required argument was not provided: token",
-    ));
-
-    Ok(())
-}
-
 fn parse_env() -> std::collections::BTreeMap<String, String> {
-    parse_dotenv(std::fs::read_to_string(".env").unwrap().as_str()).unwrap_or_else(|_| {
+    if let Ok(file) = fs::read_to_string(".env") {
+        parse_dotenv(file.as_str()).unwrap()
+    } else {
         let mut map = std::collections::BTreeMap::new();
         map.insert(
             String::from("BWS_ACCESS_TOKEN"),
             std::env::var("BWS_ACCESS_TOKEN").expect("failed to read access token"),
         );
         map
-    })
+    }
+}
+
+#[test]
+fn missing_token() -> Result<(), Box<dyn std::error::Error>> {
+    let mut cmd = Command::cargo_bin("bwenv")?;
+    cmd.env_clear();
+
+    cmd.assert().failure().stderr(predicate::str::contains(
+        "The following required argument was not provided: token",
+    ));
+
+    Ok(())
 }
 
 #[test]
