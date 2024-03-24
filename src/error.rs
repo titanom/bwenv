@@ -1,10 +1,6 @@
-#[derive(Debug)]
-pub enum Error {
-    _NoProfileInput,
-    ProfileNotConfigured,
-    _ProjectNotConfigured,
-    _RemoteProjectNotFound,
-    _CacheDirNorConfigured,
-    _InvalidConfigurationFile,
-    _NoConfigurationFile,
+#[derive(Debug, PartialEq)]
+pub enum ConfigError {
+    Read,
+    NotFound,
+    NoProfile,
 }

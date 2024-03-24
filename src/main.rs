@@ -1,40 +1,69 @@
 use clap::Parser;
 use cli::CacheCommand;
-use log::Level;
+use semver::Version;
 use std::{
     io::{self, Read, Write},
-    path::PathBuf,
+    path::Path,
     process::{self, Command, Stdio},
 };
+
+use tracing::{error, info, span, warn, Level};
+use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
 mod bitwarden;
 mod cache;
 mod cli;
 mod config;
+mod config_toml;
+mod config_yaml;
 mod error;
+mod fs;
+mod time;
 
 use cache::CacheEntry;
-// use cli::Args;
-use config::ConfigEvaluation;
 
 use crate::cache::Cache;
-use crate::config::Config;
-use crate::{bitwarden::BitwardenClient, cli::Cli};
-
-// use clap_markdown;
+use crate::{bitwarden::BitwardenClient, cli::Cli, config_yaml::Secrets};
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
-    let _ = simple_logger::init_with_level(Level::Error);
-
-    // generate docs
-    // let markdown: String = clap_markdown::help_markdown::<Args>();
-    // println!("{}", markdown);
     let cli = Cli::parse();
 
+    tracing_subscriber::registry()
+        .with(EnvFilter::new(cli.log_level.as_tracing_env()))
+        .with(
+            fmt::layer()
+                .fmt_fields(fmt::format::PrettyFields::new())
+                .event_format(fmt::format().compact().without_time().with_target(false))
+                .with_writer(std::io::stdout),
+        )
+        .init();
+
+    let root_span = span!(Level::INFO, env!("CARGO_PKG_NAME"));
+    let _guard = root_span.enter();
+
+    let local_config = config::find_local_config(Some(&std::env::current_dir().unwrap())).unwrap();
+
+    let config_path = local_config.as_pathbuf();
+
+    let _ = match local_config {
+        config::LocalConfig::Yaml(_) => {
+            let config = config_yaml::Config::new(config_path).unwrap();
+            run_with(cli, config_path, config).await
+        }
+        config::LocalConfig::Toml(_) => {
+            let toml_config = config_toml::Config::new(config_path).unwrap();
+            let config = toml_config.as_yaml_config();
+            warn!("bwenv.toml is deprecated. Please migrate to bwenv.yaml");
+            run_with(cli, config_path, config).await
+        }
+    };
+}
+
+async fn run_with<'a>(cli: Cli, config_path: &Path, config: config_yaml::Config<'a>) {
     pub fn get_program(cli: &Cli) -> Option<(String, Vec<String>)> {
         let slop = &cli.slop;
-        match &slop.get(0) {
+        match &slop.first() {
             Some(program) => {
                 let args = slop[1..].to_vec();
 
@@ -44,80 +73,99 @@ async fn main() {
         }
     }
 
-    let config = Config::new();
-
-    let config_path = PathBuf::from(&config.path);
     let root_dir = config_path.parent().unwrap();
-    let cache_dir = root_dir.join(&config.cache.path);
+    let cache_dir = root_dir.join(config.cache.path.as_pathbuf());
 
-    let cache = Cache::new(cache_dir);
+    let profile_name = cli.profile.clone().unwrap_or_else(|| {
+        info!(message = "No profile specified, falling back to default profile");
+        String::from("default")
+    });
+
+    let config_yaml::ConfigEvaluation {
+        version_req,
+        max_age,
+        project_id,
+        overrides,
+        ..
+    } = config.evaluate(&profile_name).unwrap_or_else(|_| {
+        error!(
+            message = format!(
+                "Could not find configuration for profile {:?}",
+                profile_name
+            )
+        );
+        process::exit(1)
+    });
+
+    let version = Version::parse(env!("CARGO_PKG_VERSION")).unwrap();
+
+    let cache = Cache::new(cache_dir, &version);
 
     match &cli.command {
         Some(cli::Command::Cache(cache_command)) => match cache_command {
             CacheCommand::Clear => {
-                if let Some(profile) = &cli.profile {
-                    cache.clear(&profile.clone())
-                }
-                process::exit(1);
+                cache.clear(&profile_name);
+                process::exit(0);
             }
             CacheCommand::Invalidate => {
-                if let Some(profile) = &cli.profile {
-                    cache.invalidate(&profile.clone())
-                }
-                process::exit(1);
+                cache.invalidate(&profile_name);
+                process::exit(0);
             }
         },
         None => {}
+        Some(_) => {}
     }
 
-    let ConfigEvaluation {
-        project_id,
-        profile_name,
-        max_age,
-        r#override,
-    } = config.evaluate(cli.profile.to_owned()).unwrap();
+    if !version_req.matches(&version) {
+        error!(
+            "Version {} does not meet the requirement {}",
+            version, version_req
+        );
+        std::process::exit(1);
+    }
 
-    let (program, program_args) = match get_program(&cli) {
-        Some(t) => t,
-        None => {
-            log::error!("no slop provided");
-            std::process::exit(1)
-        }
-    };
-
-    let CacheEntry {
-        variables: secrets, ..
-    } = cache
-        .get_or_revalidate(&profile_name, max_age, move || async {
-            let mut bitwarden_client = BitwardenClient::new(cli.token).await;
-            bitwarden_client.get_secrets_by_project_id(project_id).await
+    let token = cli.token.clone();
+    let CacheEntry { variables, .. } = cache
+        .get_or_revalidate(&profile_name, max_age.as_u64(), move || async move {
+            let mut bitwarden_client = BitwardenClient::new(token).await;
+            bitwarden_client
+                .get_secrets_by_project_id(&project_id)
+                .await
         })
         .await
         .unwrap();
 
-    let mut final_secrets = std::collections::HashMap::new();
+    let mut secrets = Secrets::merge(&variables, &overrides);
 
-    for (key, value) in secrets.into_iter() {
-        final_secrets.insert(key, value);
+    if let Some(cli::Command::Inspect(inspect_args)) = &cli.command {
+        let reveal = if inspect_args.reveal {
+                inquire::Confirm::new("reveal secrets in output")
+                    .with_default(false)
+                    .with_help_message("Enabling this option will display sensitive information in plain text. Use with caution, especially in shared or public environments.")
+                    .prompt()
+            } else {
+                Ok(false)
+            }
+            .unwrap();
+
+        print!("{}", &secrets.table(reveal));
+        process::exit(1);
     }
 
-    if let Some(overrides) = &r#override {
-        for (key, value) in overrides {
-            final_secrets.insert(key.clone(), value.clone());
+    let (program, program_args) = match get_program(&cli) {
+        Some(t) => t,
+        None => {
+            error!("no slop provided");
+            std::process::exit(1)
         }
-    }
-
-    let secrets = final_secrets.into_iter().collect::<Vec<(String, String)>>();
+    };
 
     let mut cmd = Command::new(program);
-
+    cmd.envs(secrets.as_vec());
     cmd.args(program_args);
-
     cmd.stdin(Stdio::inherit())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
-
-    cmd.envs(secrets.to_owned());
 
     if let Ok(mut child) = cmd.spawn() {
         let mut stdout = child.stdout.take().unwrap();

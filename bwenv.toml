@@ -1,3 +1,5 @@
+version = "1.2"
+
 environment = ["MY_ENV", "NODE_ENV"]
 project = "227f4033-fdbb-482b-847c-b06600dc8e69"
 

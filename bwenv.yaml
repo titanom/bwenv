@@ -1,0 +1,20 @@
+version: 1.2
+
+cache:
+  path: node_modules/.cache
+
+global:
+  overrides:
+    FORCE_COLOR: 1
+    OPENAI_API_KEYS: default overrides
+
+profiles:
+  default:
+    project-id: 227f4033-fdbb-482b-847c-b06600dc8e69
+
+  development:
+    project-id: 227f4033-fdbb-482b-847c-b06600dc8e69
+
+  production:
+    project-id: 227f4033-fdbb-482b-847c-b06600dc8e69
+
