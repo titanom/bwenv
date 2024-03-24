@@ -138,18 +138,19 @@ async fn run_with<'a>(cli: Cli, config_path: &Path, config: config_yaml::Config<
     let mut secrets = Secrets::merge(&variables, &overrides);
 
     if let Some(cli::Command::Inspect(inspect_args)) = &cli.command {
-        let reveal = if inspect_args.reveal {
+        let is_terminal = atty::is(atty::Stream::Stdout);
+        let reveal = if inspect_args.reveal && is_terminal {
                 inquire::Confirm::new("reveal secrets in output")
                     .with_default(false)
                     .with_help_message("Enabling this option will display sensitive information in plain text. Use with caution, especially in shared or public environments.")
                     .prompt()
             } else {
-                Ok(false)
+                Ok(inspect_args.reveal)
             }
             .unwrap();
 
         print!("{}", &secrets.table(reveal));
-        process::exit(1);
+        process::exit(0);
     }
 
     let (program, program_args) = match get_program(&cli) {
