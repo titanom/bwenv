@@ -7,6 +7,7 @@ use tracing::info;
 use crate::config_yaml::{self, Profiles};
 
 use crate::error::ConfigError;
+use crate::schema_types::VersionReq;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Profile<'a> {
@@ -25,7 +26,7 @@ pub struct Cache {
 
 #[derive(Debug, Deserialize)]
 pub struct Config<'a> {
-    pub version: String,
+    pub version: VersionReq,
     pub environment: Option<Vec<String>>,
     pub cache: Cache,
     pub project: Option<String>,
@@ -70,7 +71,7 @@ impl Config<'_> {
             version: self.version.clone(),
             path: self.path.clone(),
             global: Some(config_yaml::Global {
-                overrides: self.r#override.clone(),
+                overrides: config_yaml::GlobalOverrides(self.r#override.clone()),
             }),
             profiles: Profiles::new(
                 <BTreeMap<std::string::String, Profile<'_>> as Clone>::clone(&self.profile)
@@ -82,8 +83,8 @@ impl Config<'_> {
                     .collect(),
             ),
             cache: config_yaml::Cache {
-                path: config_yaml::CachePath(self.cache.path.as_pathbuf().clone()),
-                max_age: config_yaml::CacheMaxAge(*self.cache.max_age.as_u64()),
+                path: config_yaml::CachePath(self.cache.path.clone()),
+                max_age: config_yaml::CacheMaxAge(*self.cache.max_age),
             },
         }
     }
