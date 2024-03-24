@@ -19,7 +19,10 @@ fn missing_token() -> Result<(), Box<dyn std::error::Error>> {
 fn parse_env() -> std::collections::BTreeMap<String, String> {
     parse_dotenv(std::fs::read_to_string(".env").unwrap().as_str()).unwrap_or_else(|_| {
         let mut map = std::collections::BTreeMap::new();
-        map.insert(String::from("BWS_ACCESS_TOKEN"), std::env::var("BWS_ACCESS_TOKEN").expect("failed to read access token"));
+        map.insert(
+            String::from("BWS_ACCESS_TOKEN"),
+            std::env::var("BWS_ACCESS_TOKEN").expect("failed to read access token"),
+        );
         map
     })
 }
