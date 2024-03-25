@@ -49,22 +49,22 @@ async fn main() {
     let data = data::Data::new();
 
     if let Ok(content) = data.get_content() {
-        let latest_version =
-            if is_date_older_than_n_seconds(content.last_update_check, &(86400 as u64)) {
-                let latest_version = version::fetch_latest_version().await.unwrap();
-                let _ = data.set_content(
-                    time::SystemTime::now()
-                        .duration_since(time::SystemTime::UNIX_EPOCH)
-                        .expect("SystemTime before UNIX EPOCH!")
-                        .as_millis()
-                        .try_into()
-                        .unwrap(),
-                    Version::to_string(&latest_version),
-                );
-                latest_version.to_string()
-            } else {
-                content.last_checked_version
-            };
+        let latest_version = if is_date_older_than_n_seconds(content.last_update_check, &86400_u64)
+        {
+            let latest_version = version::fetch_latest_version().await.unwrap();
+            let _ = data.set_content(
+                time::SystemTime::now()
+                    .duration_since(time::SystemTime::UNIX_EPOCH)
+                    .expect("SystemTime before UNIX EPOCH!")
+                    .as_millis()
+                    .try_into()
+                    .unwrap(),
+                Version::to_string(&latest_version),
+            );
+            latest_version.to_string()
+        } else {
+            content.last_checked_version
+        };
         let latest_version = Version::parse(&latest_version).unwrap();
         let ordering = version.cmp_precedence(&latest_version);
         if ordering == Ordering::Less {
@@ -76,7 +76,7 @@ async fn main() {
 
     let config_path = local_config.as_pathbuf();
 
-    let _ = match local_config {
+    match local_config {
         config::LocalConfig::Yaml(_) => {
             let config = config_yaml::Config::new(config_path).unwrap();
             run_with(cli, config_path, config, version).await

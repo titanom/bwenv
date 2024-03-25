@@ -11,6 +11,12 @@ pub struct Data {
     last_update_check: u64,
 }
 
+impl Default for Data {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DataContent {
     pub last_update_check: u64,
@@ -60,7 +66,7 @@ impl Data {
     }
 
     pub fn get_content(&self) -> Result<DataContent, Box<dyn std::error::Error>> {
-        Ok(self.read()?)
+        self.read()
     }
 
     pub fn set_content(
@@ -71,6 +77,6 @@ impl Data {
         let mut current_data = self.read()?;
         current_data.last_update_check = last_update_check;
         current_data.last_checked_version = version;
-        Ok(self.write(&current_data)?)
+        self.write(&current_data)
     }
 }

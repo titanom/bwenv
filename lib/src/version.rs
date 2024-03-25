@@ -5,7 +5,7 @@ use serde::Deserialize;
 
 static GITHUB_API_URL: &str = "https://api.github.com/repos/titanom/bwenv/releases/latest";
 
-static CLIENT: Lazy<Client> = Lazy::new(|| Client::new());
+static CLIENT: Lazy<Client> = Lazy::new(Client::new);
 
 #[derive(Deserialize)]
 struct GithubRelease {
@@ -22,5 +22,5 @@ pub async fn fetch_latest_version() -> Result<Version, Box<dyn std::error::Error
         .json::<GithubRelease>()
         .await?;
 
-    Ok(Version::parse(&response.tag_name.replace("v", ""))?)
+    Ok(Version::parse(&response.tag_name.replace('v', ""))?)
 }
