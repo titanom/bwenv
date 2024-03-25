@@ -13,7 +13,6 @@ struct GithubRelease {
 }
 
 pub async fn fetch_latest_version() -> Result<Version, Box<dyn std::error::Error>> {
-    println!("did fetch --------------------------");
     let response = CLIENT
         .get(GITHUB_API_URL)
         .header("User-Agent", "bwenv")
