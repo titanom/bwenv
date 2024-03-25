@@ -2,9 +2,11 @@ use clap::Parser;
 use cli::CacheCommand;
 use semver::Version;
 use std::{
+    cmp::Ordering,
     io::{self, Read, Write},
     path::Path,
     process::{self, Command, Stdio},
+    time,
 };
 
 use tracing::{error, info, span, warn, Level};
@@ -12,11 +14,13 @@ use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
 mod cli;
 
-use bwenv_lib::bitwarden;
 use bwenv_lib::cache;
 use bwenv_lib::config;
 use bwenv_lib::config_toml;
 use bwenv_lib::config_yaml;
+use bwenv_lib::data;
+use bwenv_lib::version;
+use bwenv_lib::{bitwarden, time::is_date_older_than_n_seconds};
 
 use cache::CacheEntry;
 
@@ -40,6 +44,34 @@ async fn main() {
     let root_span = span!(Level::INFO, env!("CARGO_PKG_NAME"));
     let _guard = root_span.enter();
 
+    let version = Version::parse(env!("CARGO_PKG_VERSION")).unwrap();
+
+    let data = data::Data::new();
+
+    if let Ok(content) = data.get_content() {
+        let latest_version =
+            if is_date_older_than_n_seconds(content.last_update_check, &(86400 as u64)) {
+                let latest_version = version::fetch_latest_version().await.unwrap();
+                let _ = data.set_content(
+                    time::SystemTime::now()
+                        .duration_since(time::SystemTime::UNIX_EPOCH)
+                        .expect("SystemTime before UNIX EPOCH!")
+                        .as_millis()
+                        .try_into()
+                        .unwrap(),
+                    Version::to_string(&latest_version),
+                );
+                latest_version.to_string()
+            } else {
+                content.last_checked_version
+            };
+        let latest_version = Version::parse(&latest_version).unwrap();
+        let ordering = version.cmp_precedence(&latest_version);
+        if ordering == Ordering::Less {
+            info!(message = format!("New version available: {}", &latest_version));
+        }
+    }
+
     let local_config = config::find_local_config(Some(&std::env::current_dir().unwrap())).unwrap();
 
     let config_path = local_config.as_pathbuf();
@@ -47,18 +79,23 @@ async fn main() {
     let _ = match local_config {
         config::LocalConfig::Yaml(_) => {
             let config = config_yaml::Config::new(config_path).unwrap();
-            run_with(cli, config_path, config).await
+            run_with(cli, config_path, config, version).await
         }
         config::LocalConfig::Toml(_) => {
             let toml_config = config_toml::Config::new(config_path).unwrap();
             let config = toml_config.as_yaml_config();
             warn!("bwenv.toml is deprecated. Please migrate to bwenv.yaml");
-            run_with(cli, config_path, config).await
+            run_with(cli, config_path, config, version).await
         }
     };
 }
 
-async fn run_with<'a>(cli: Cli, config_path: &Path, config: config_yaml::Config<'a>) {
+async fn run_with<'a>(
+    cli: Cli,
+    config_path: &Path,
+    config: config_yaml::Config<'a>,
+    version: Version,
+) {
     pub fn get_program(cli: &Cli) -> Option<(String, Vec<String>)> {
         let slop = &cli.slop;
         match &slop.first() {
@@ -94,8 +131,6 @@ async fn run_with<'a>(cli: Cli, config_path: &Path, config: config_yaml::Config<
         );
         process::exit(1)
     });
-
-    let version = Version::parse(env!("CARGO_PKG_VERSION")).unwrap();
 
     let cache = Cache::new(cache_dir, &version);
 
