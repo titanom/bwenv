@@ -48,28 +48,28 @@ async fn main() {
 
     let data = data::Data::new();
 
-    if let Ok(content) = data.get_content() {
-        let latest_version = if is_date_older_than_n_seconds(content.last_update_check, &86400_u64)
-        {
-            let latest_version = version::fetch_latest_version().await.unwrap();
-            let _ = data.set_content(
-                time::SystemTime::now()
-                    .duration_since(time::SystemTime::UNIX_EPOCH)
-                    .expect("SystemTime before UNIX EPOCH!")
-                    .as_millis()
-                    .try_into()
-                    .unwrap(),
-                Version::to_string(&latest_version),
-            );
-            latest_version.to_string()
-        } else {
-            content.last_checked_version
-        };
-        let latest_version = Version::parse(&latest_version).unwrap();
-        let ordering = version.cmp_precedence(&latest_version);
-        if ordering == Ordering::Less {
-            info!(message = format!("New version available: {}", &latest_version));
-        }
+    let data_content = data.get_content();
+    let latest_version = if is_date_older_than_n_seconds(data_content.last_update_check, &86400_u64)
+        || data_content.last_checked_version.is_none()
+    {
+        let latest_version = version::fetch_latest_version().await.unwrap();
+        let _ = data.set_content(
+            time::SystemTime::now()
+                .duration_since(time::SystemTime::UNIX_EPOCH)
+                .expect("SystemTime before UNIX EPOCH!")
+                .as_millis()
+                .try_into()
+                .unwrap(),
+            Version::to_string(&latest_version),
+        );
+        latest_version.to_string()
+    } else {
+        data_content.last_checked_version.unwrap()
+    };
+    let latest_version = Version::parse(&latest_version).unwrap();
+    let ordering = version.cmp_precedence(&latest_version);
+    if ordering == Ordering::Less {
+        info!(message = format!("New version available: {}", &latest_version));
     }
 
     let local_config = config::find_local_config(Some(&std::env::current_dir().unwrap())).unwrap();

@@ -20,14 +20,14 @@ impl Default for Data {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DataContent {
     pub last_update_check: u64,
-    pub last_checked_version: String,
+    pub last_checked_version: Option<String>,
 }
 
 impl Default for DataContent {
     fn default() -> Self {
         Self {
             last_update_check: 0,
-            last_checked_version: String::from("v0.0.0"),
+            last_checked_version: None,
         }
     }
 }
@@ -47,6 +47,7 @@ impl Data {
 
     fn read(&self) -> Result<DataContent, Box<dyn std::error::Error>> {
         if !self.path.exists() {
+            let _ = fs::create_dir_all(&self.path);
             let file = fs::File::create(&self.path)?;
             let default_data = DataContent::default();
             serde_yaml::to_writer(file, &default_data)?;
@@ -65,8 +66,8 @@ impl Data {
         Ok(())
     }
 
-    pub fn get_content(&self) -> Result<DataContent, Box<dyn std::error::Error>> {
-        self.read()
+    pub fn get_content(&self) -> DataContent {
+        self.read().unwrap_or(DataContent::default())
     }
 
     pub fn set_content(
@@ -76,7 +77,7 @@ impl Data {
     ) -> Result<(), Box<dyn std::error::Error>> {
         let mut current_data = self.read()?;
         current_data.last_update_check = last_update_check;
-        current_data.last_checked_version = version;
+        current_data.last_checked_version = Some(version);
         self.write(&current_data)
     }
 }
