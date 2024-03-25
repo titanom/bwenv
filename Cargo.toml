@@ -1,6 +1,6 @@
 [package]
 name = "bwenv"
-version = "1.2.2"
+version = "1.2.3"
 edition = "2021"
 
 [dependencies]
@@ -12,7 +12,7 @@ bwenv-lib = { path = "./lib" }
 tracing = "0.1.40"
 semver = "1.0.22"
 atty = "0.2.14"
-openssl-sys = {version = "0.9", features = ["vendored"]}
+openssl-sys = { version = "0.9", features = ["vendored"] }
 
 [workspace]
 members = ["lib", "."]
