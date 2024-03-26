@@ -63,7 +63,7 @@ impl BitwardenClient {
         project_id: T,
     ) -> Result<Secrets<'a>, Box<dyn std::error::Error>> {
         let secret_identifiers = async {
-            let retry_strategy = ExponentialBackoff::from_millis(10).map(jitter).take(3);
+            let retry_strategy = ExponentialBackoff::from_millis(10).map(jitter).take(4);
             let request = || async {
                 let secrets_by_project_request = SecretIdentifiersByProjectRequest {
                     project_id: Uuid::parse_str(project_id.as_ref())?,
@@ -94,7 +94,7 @@ impl BitwardenClient {
             .collect();
 
         let secrets = async {
-            let retry_strategy = ExponentialBackoff::from_millis(10).map(jitter).take(3);
+            let retry_strategy = ExponentialBackoff::from_millis(10).map(jitter).take(4);
             let request = || async {
                 let secrets_get_request = SecretsGetRequest { ids: ids.clone() };
 
