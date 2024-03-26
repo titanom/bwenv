@@ -1,4 +1,4 @@
-use std::sync::Mutex;
+use async_mutex::Mutex;
 
 use bitwarden::secrets_manager::secrets::{
     SecretIdentifiersByProjectRequest, SecretIdentifiersResponse, SecretsGetRequest,
@@ -74,7 +74,7 @@ impl BitwardenClient {
                 Ok(self
                     .client
                     .lock()
-                    .unwrap()
+                    .await
                     .secrets()
                     .list_by_project(&secrets_by_project_request)
                     .await?)
@@ -103,7 +103,7 @@ impl BitwardenClient {
                 Ok(self
                     .client
                     .lock()
-                    .unwrap()
+                    .await
                     .secrets()
                     .get_by_ids(secrets_get_request)
                     .await?
