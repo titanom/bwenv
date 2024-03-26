@@ -2,7 +2,7 @@ use crate::time::is_date_older_than_n_seconds;
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use std::{fs, future::Future, path::PathBuf, time::SystemTime};
-use tracing::info;
+use tracing::{error, info};
 
 use crate::config_yaml::Secrets;
 
@@ -80,7 +80,9 @@ impl<'a> Cache<'a> {
 
     pub fn set(&self, profile: &str, variables: Secrets) {
         let cache_file_path = self.get_cache_file_path(profile);
-        fs::create_dir_all(self.directory.clone()).unwrap();
+        fs::create_dir_all(self.directory.clone()).unwrap_or_else(|_| {
+            error!(message = "Failed to create cache directory");
+        });
         let cache_entry = CacheEntry {
             last_revalidation: SystemTime::now()
                 .duration_since(SystemTime::UNIX_EPOCH)
@@ -89,8 +91,13 @@ impl<'a> Cache<'a> {
             version: self.version.clone(),
             variables,
         };
-        let cache_entry = serde_yaml::to_string(&cache_entry).unwrap();
-        std::fs::write(cache_file_path, cache_entry).unwrap();
+        if let Ok(cache_entry) = serde_yaml::to_string(&cache_entry) {
+            std::fs::write(cache_file_path, cache_entry).unwrap_or_else(|_| {
+                error!(message = "Failed to write cache to file");
+            });
+        } else {
+            error!(message = "Failed to parse cache struct");
+        };
     }
 
     pub fn clear(&self, profile: &str) {
@@ -103,14 +110,20 @@ impl<'a> Cache<'a> {
         info!(message = format!("Invalidating cache for profile {:?}", profile));
         if let Some(cache_entry) = self.get(profile) {
             let cache_file_path = self.get_cache_file_path(profile);
-            fs::create_dir_all(self.directory.clone()).unwrap();
+            fs::create_dir_all(self.directory.clone())
+                .unwrap_or_else(|_| error!(message = "Failed to create cache directory"));
             let cache_entry = CacheEntry {
                 last_revalidation: 0,
                 version: self.version.clone(),
                 variables: cache_entry.variables,
             };
-            let cache_entry = serde_yaml::to_string(&cache_entry).unwrap();
-            std::fs::write(cache_file_path, cache_entry).unwrap();
+            if let Ok(cache_entry) = serde_yaml::to_string(&cache_entry) {
+                std::fs::write(cache_file_path, cache_entry).unwrap_or_else(|_| {
+                    error!(message = "Failed to write cache to file");
+                });
+            } else {
+                error!(message = "Failed to parse cache struct");
+            };
         }
     }
 

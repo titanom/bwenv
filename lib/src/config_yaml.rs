@@ -104,8 +104,9 @@ impl<'a> Secrets<'a> {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Serialize, Deserialize, JsonSchema, Default)]
 #[schemars(title = "Global", description = "Global configuration options")]
+#[serde(default)]
 pub struct Global<'a> {
     #[serde(
         default,
@@ -174,7 +175,7 @@ pub struct Config<'a> {
         title = "Global",
         description = "Overrides for global configuration options, applied to all profiles"
     )]
-    pub global: Option<Global<'a>>,
+    pub global: Global<'a>,
 
     #[schemars(
         title = "Profiles",
@@ -196,7 +197,7 @@ pub struct ConfigEvaluation<'a> {
 }
 
 impl<'a> Config<'a> {
-    pub fn new<P: AsRef<Path>>(config_file_path: P) -> Result<Self, anyhow::Error> {
+    pub fn new<P: AsRef<Path>>(config_file_path: P) -> Result<Self, Box<dyn std::error::Error>> {
         parse_config_file(config_file_path)
     }
 
@@ -208,7 +209,7 @@ impl<'a> Config<'a> {
 
         info!(message = format!("Using profile {:?}", profile_name));
 
-        let global_overrides = &self.global.as_ref().unwrap().overrides;
+        let global_overrides = &self.global.overrides;
         let profile_overrides = &profile.overrides;
 
         let overrides = Secrets::merge(global_overrides, profile_overrides);
@@ -223,12 +224,12 @@ impl<'a> Config<'a> {
     }
 }
 
-fn parse_config_file<'a, P: AsRef<Path>>(file_path: P) -> Result<Config<'a>, anyhow::Error> {
+fn parse_config_file<'a, P: AsRef<Path>>(
+    file_path: P,
+) -> Result<Config<'a>, Box<dyn std::error::Error>> {
     info!(message = format!("Using configuration file at {:?}", file_path.as_ref()));
     let mut raw = String::new();
-    let mut file = File::open(file_path)
-        .map_err(|_| ConfigError::Read)
-        .unwrap();
+    let mut file = File::open(file_path).map_err(|_| ConfigError::Read)?;
     let _ = file.read_to_string(&mut raw);
 
     Ok(serde_yaml::from_str::<Config>(&raw)
@@ -272,7 +273,7 @@ profiles: {{}}
         let config = Config {
             version: VersionReq::parse("1.0.0").unwrap(),
             cache: Cache::default(),
-            global: None,
+            global: Global::default(),
             profiles: Profiles::default(),
             path: String::new(),
         };
@@ -324,14 +325,14 @@ profiles:
         let config = Config {
             version: VersionReq::parse("1.0.0").unwrap(),
             cache: Cache::default(),
-            global: Some(Global {
+            global: Global {
                 overrides: GlobalOverrides(Secrets(
                     [("global_key".into(), "global_value".into())]
                         .iter()
                         .cloned()
                         .collect(),
                 )),
-            }),
+            },
             profiles: Profiles::default(),
             path: String::new(),
         };

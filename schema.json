@@ -4,6 +4,7 @@
   "type": "object",
   "required": [
     "cache",
+    "global",
     "profiles",
     "version"
   ],
@@ -20,12 +21,9 @@
     "global": {
       "title": "Global",
       "description": "Overrides for global configuration options, applied to all profiles",
-      "anyOf": [
+      "allOf": [
         {
           "$ref": "#/definitions/Global"
-        },
-        {
-          "type": "null"
         }
       ]
     },
