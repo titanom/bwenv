@@ -44,35 +44,51 @@ async fn main() {
     let root_span = span!(Level::INFO, env!("CARGO_PKG_NAME"));
     let _guard = root_span.enter();
 
-    let version = Version::parse(env!("CARGO_PKG_VERSION")).unwrap();
+    let version =
+        Version::parse(env!("CARGO_PKG_VERSION")).expect("Failed to parse cargo package version");
 
     let data = data::Data::new();
 
     let data_content = data.get_content();
-    let latest_version = if is_date_older_than_n_seconds(data_content.last_update_check, &86400_u64)
-        || data_content.last_checked_version.is_none()
-    {
-        let latest_version = version::fetch_latest_version().await.unwrap();
-        let _ = data.set_content(
-            time::SystemTime::now()
-                .duration_since(time::SystemTime::UNIX_EPOCH)
-                .expect("SystemTime before UNIX EPOCH!")
-                .as_millis()
-                .try_into()
-                .unwrap(),
-            Version::to_string(&latest_version),
-        );
-        latest_version.to_string()
-    } else {
-        data_content.last_checked_version.unwrap()
-    };
-    let latest_version = Version::parse(&latest_version).unwrap();
-    let ordering = version.cmp_precedence(&latest_version);
-    if ordering == Ordering::Less {
-        info!(message = format!("New version available: {}", &latest_version));
+    let latest_version: Option<String> =
+        if is_date_older_than_n_seconds(data_content.last_update_check, &86400_u64)
+            || data_content.last_checked_version.is_none()
+        {
+            if let Ok(latest_version) = version::fetch_latest_version().await {
+                let _ = data.set_content(
+                    time::SystemTime::now()
+                        .duration_since(time::SystemTime::UNIX_EPOCH)
+                        .expect("SystemTime before UNIX EPOCH!")
+                        .as_millis()
+                        .try_into()
+                        .expect("Failed to convert system time"),
+                    Version::to_string(&latest_version),
+                );
+                Some(latest_version.to_string())
+            } else {
+                error!("Failed to fetch latest version");
+                None
+            }
+        } else {
+            data_content.last_checked_version
+        };
+
+    if let Some(latest_version) = &latest_version {
+        if let Ok(latest_version) = Version::parse(latest_version) {
+            let ordering = version.cmp_precedence(&latest_version);
+            if ordering == Ordering::Less {
+                info!(message = format!("New version available: {}", &latest_version));
+            }
+        }
     }
 
-    let local_config = config::find_local_config(Some(&std::env::current_dir().unwrap())).unwrap();
+    let local_config = config::find_local_config(Some(
+        &std::env::current_dir().expect("Failed to retrieve CWD"),
+    ))
+    .unwrap_or_else(|_| {
+        error!("Failed to find local configuration file");
+        std::process::exit(1);
+    });
 
     let config_path = local_config.as_pathbuf();
 
@@ -88,6 +104,8 @@ async fn main() {
             run_with(cli, config_path, config, version).await
         }
     };
+
+    return ();
 }
 
 async fn run_with<'a>(
@@ -108,7 +126,9 @@ async fn run_with<'a>(
         }
     }
 
-    let root_dir = config_path.parent().unwrap();
+    let root_dir = config_path
+        .parent()
+        .expect("Failed to resolve root directory");
     let cache_dir = root_dir.join(config.cache.path.as_path());
 
     let profile_name = cli.profile.clone().unwrap_or_else(|| {
@@ -203,8 +223,8 @@ async fn run_with<'a>(
         .stderr(Stdio::piped());
 
     if let Ok(mut child) = cmd.spawn() {
-        let mut stdout = child.stdout.take().unwrap();
-        let mut stderr = child.stderr.take().unwrap();
+        let mut stdout = child.stdout.take().expect("Failed to take stdout");
+        let mut stderr = child.stderr.take().expect("Failed to take stderr");
         let mut buffer = [0; 1024];
 
         // Create separate threads to handle stdout and stderr

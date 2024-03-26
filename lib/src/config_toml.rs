@@ -70,9 +70,9 @@ impl Config<'_> {
         crate::config_yaml::Config::<'a> {
             version: self.version.clone(),
             path: self.path.clone(),
-            global: Some(config_yaml::Global {
+            global: config_yaml::Global {
                 overrides: config_yaml::GlobalOverrides(self.r#override.clone()),
-            }),
+            },
             profiles: Profiles::new(
                 <BTreeMap<std::string::String, Profile<'_>> as Clone>::clone(&self.profile)
                     .into_iter()

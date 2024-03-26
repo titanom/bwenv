@@ -53,7 +53,7 @@ impl Data {
     }
 
     fn write(&self, content: &DataContent) -> Result<(), Box<dyn std::error::Error>> {
-        std::fs::write(&self.path, serde_yaml::to_string(content).unwrap())?;
+        std::fs::write(&self.path, serde_yaml::to_string(content)?)?;
         Ok(())
     }
 

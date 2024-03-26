@@ -83,11 +83,11 @@ impl BitwardenClient {
             let result: Result<SecretIdentifiersResponse, Box<dyn std::error::Error>> =
                 Retry::spawn(retry_strategy, request).await;
 
-            result.unwrap()
+            result
         };
 
         let ids: Vec<Uuid> = secret_identifiers
-            .await
+            .await?
             .data
             .into_iter()
             .map(|ident| ident.id)
