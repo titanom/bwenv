@@ -1,12 +1,19 @@
-use bitwarden::secrets_manager::secrets::{SecretIdentifiersByProjectRequest, SecretsGetRequest};
+use std::sync::Mutex;
+
+use bitwarden::secrets_manager::secrets::{
+    SecretIdentifiersByProjectRequest, SecretIdentifiersResponse, SecretsGetRequest,
+};
 use bitwarden::{
     auth::login::AccessTokenLoginRequest,
     client::client_settings::{ClientSettings, DeviceType},
     Client,
 };
+use tokio_retry::strategy::{jitter, ExponentialBackoff};
+use tokio_retry::Retry;
 use uuid::Uuid;
 
 use crate::config_yaml::Secrets;
+use tracing::{error, info};
 
 pub struct BitwardenClient {
     _identity_url: String,
@@ -14,7 +21,7 @@ pub struct BitwardenClient {
     _user_agent: String,
     _device_type: DeviceType,
     _access_token: String,
-    client: Client,
+    client: Mutex<Client>,
 }
 
 impl BitwardenClient {
@@ -36,10 +43,13 @@ impl BitwardenClient {
                 access_token: access_token.to_owned(),
             })
             .await
-            .unwrap();
+            .unwrap_or_else(|_| {
+                error!(message = "Failed to login using access token");
+                std::process::exit(1);
+            });
 
         Self {
-            client,
+            client: Mutex::new(client),
             _access_token: access_token,
             _identity_url: identity_url,
             _api_url: api_url,
@@ -51,34 +61,64 @@ impl BitwardenClient {
     pub async fn get_secrets_by_project_id<'a, T: AsRef<str>>(
         &mut self,
         project_id: T,
-    ) -> Secrets<'a> {
-        let secrets_by_project_request = SecretIdentifiersByProjectRequest {
-            project_id: Uuid::parse_str(project_id.as_ref()).unwrap(),
+    ) -> Result<Secrets<'a>, Box<dyn std::error::Error>> {
+        let secret_identifiers = async {
+            let retry_strategy = ExponentialBackoff::from_millis(10).map(jitter).take(3);
+            let request = || async {
+                let secrets_by_project_request = SecretIdentifiersByProjectRequest {
+                    project_id: Uuid::parse_str(project_id.as_ref())?,
+                };
+
+                info!(message = "Fetching secret IDs");
+
+                Ok(self
+                    .client
+                    .lock()
+                    .unwrap()
+                    .secrets()
+                    .list_by_project(&secrets_by_project_request)
+                    .await?)
+            };
+
+            let result: Result<SecretIdentifiersResponse, Box<dyn std::error::Error>> =
+                Retry::spawn(retry_strategy, request).await;
+
+            result.unwrap()
         };
 
-        let secret_identifiers = self
-            .client
-            .secrets()
-            .list_by_project(&secrets_by_project_request)
+        let ids: Vec<Uuid> = secret_identifiers
             .await
-            .unwrap();
-
-        let secrets_get_request = SecretsGetRequest {
-            ids: secret_identifiers
-                .data
-                .into_iter()
-                .map(|ident| ident.id)
-                .collect(),
-        };
-
-        self.client
-            .secrets()
-            .get_by_ids(secrets_get_request)
-            .await
-            .unwrap()
             .data
             .into_iter()
-            .map(|secret| (secret.key, secret.value))
-            .collect()
+            .map(|ident| ident.id)
+            .collect();
+
+        let secrets = async {
+            let retry_strategy = ExponentialBackoff::from_millis(10).map(jitter).take(3);
+            let request = || async {
+                let secrets_get_request = SecretsGetRequest { ids: ids.clone() };
+
+                info!(message = "Fetching secrets");
+
+                Ok(self
+                    .client
+                    .lock()
+                    .unwrap()
+                    .secrets()
+                    .get_by_ids(secrets_get_request)
+                    .await?
+                    .data
+                    .into_iter()
+                    .map(|secret| (secret.key, secret.value))
+                    .collect())
+            };
+
+            let result: Result<Secrets<'a>, Box<dyn std::error::Error>> =
+                Retry::spawn(retry_strategy, request).await;
+
+            result
+        };
+
+        secrets.await
     }
 }
