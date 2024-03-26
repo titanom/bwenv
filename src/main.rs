@@ -104,8 +104,6 @@ async fn main() {
             run_with(cli, config_path, config, version).await
         }
     };
-
-    return ();
 }
 
 async fn run_with<'a>(
