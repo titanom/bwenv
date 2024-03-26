@@ -53,7 +53,7 @@ mod tests {
     #[test]
     fn finds_yaml_config_in_current_dir() {
         let temp_dir = tempdir().unwrap();
-        create_config_file(&temp_dir.path().to_path_buf(), "bwenv.yaml");
+        create_config_file(temp_dir.path(), "bwenv.yaml");
 
         let result = find_local_config(Some(temp_dir.path()));
         assert!(result.is_ok());
@@ -66,7 +66,7 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         let child_dir = temp_dir.path().join("child");
         std::fs::create_dir(&child_dir).unwrap();
-        create_config_file(&temp_dir.path().to_path_buf(), "bwenv.toml");
+        create_config_file(temp_dir.path(), "bwenv.toml");
 
         let result = find_local_config(Some(&child_dir));
         assert!(result.is_ok());

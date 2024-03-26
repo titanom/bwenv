@@ -17,19 +17,10 @@ impl Default for Data {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Default)]
 pub struct DataContent {
     pub last_update_check: u64,
     pub last_checked_version: Option<String>,
-}
-
-impl Default for DataContent {
-    fn default() -> Self {
-        Self {
-            last_update_check: 0,
-            last_checked_version: None,
-        }
-    }
 }
 
 impl Data {
@@ -67,7 +58,7 @@ impl Data {
     }
 
     pub fn get_content(&self) -> DataContent {
-        self.read().unwrap_or(DataContent::default())
+        self.read().unwrap_or_default()
     }
 
     pub fn set_content(

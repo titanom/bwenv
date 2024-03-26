@@ -164,6 +164,7 @@ async fn run_with<'a>(
             bitwarden_client
                 .get_secrets_by_project_id(&project_id)
                 .await
+                .unwrap()
         })
         .await
         .unwrap();
