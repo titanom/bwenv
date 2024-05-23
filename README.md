@@ -6,6 +6,13 @@ CLI for injecting secrets from Bitwarden Secrets Manager into a process
 
 ### Using `cargo`
 
+You may need to update your cargo config:
+
+```toml
+[net]
+git-fetch-with-cli = true 
+```
+
 Install latest version:
 
 ```sh
